@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { DoubleSide, Mesh, MathUtils } from 'three';
+import * as THREE from 'three';
 import { NoiseGenerator } from './NoiseGenerator';
 import { CHUNK_SIZE } from '../utils/constants';
 import { RoadMask } from '../utils/RoadMask';
@@ -22,7 +23,7 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                 <planeGeometry args={[CHUNK_SIZE, CHUNK_SIZE, resolution - 1, resolution - 1]} />
                 <ChunkMeshLogic noise={noise} worldX={x} worldZ={z} resolution={resolution} roadMask={roadMask} />
                 <meshStandardMaterial
-                    color="#5c8d45"
+                    vertexColors={true}
                     roughness={1.0}
                     side={DoubleSide}
                     wireframe={false}
@@ -57,6 +58,19 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution, roadMask }: { noise
 
                 const pos = parent.geometry.attributes.position as any;
 
+                // Add color attribute if missing
+                if (!parent.geometry.attributes.color) {
+                    const colors = new Float32Array(pos.count * 3);
+                    parent.geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+                }
+                const col = parent.geometry.attributes.color as any;
+
+                // Color palette
+                const grassColor = new THREE.Color('#5c8d45');
+                const grassVarColor = new THREE.Color('#7da156'); // Lighter grass
+                const mudColor = new THREE.Color('#5d4037'); // Dark brown
+                const dryColor = new THREE.Color('#8d6e63'); // Light brown
+
                 for (let i = 0; i < pos.count; i++) {
                     const lx = pos.getX(i);
                     const ly = pos.getY(i);
@@ -68,6 +82,13 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution, roadMask }: { noise
                     // Get base height from noise
                     let h = noise.getHeight(wx, wz);
 
+                    // Base color logic
+                    let finalColor = grassColor.clone();
+
+                    // Noise for color variation
+                    const n = noise.getNoise(wx, wz, 0.1);
+                    finalColor.lerp(grassVarColor, n * 0.5 + 0.5);
+
                     // Flatten under road
                     if (roadMask) {
                         const distToRoad = roadMask.getDistanceToRoad(wx, wz);
@@ -78,23 +99,33 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution, roadMask }: { noise
                         if (roadH !== null) {
                             if (distToRoad < halfWidth) {
                                 // Strictly under road - flatten completely
-                                // Use road height minus buffer to ensure road sits on top
                                 h = roadH - 0.2;
+                                // Dark mud under road
+                                finalColor.copy(mudColor).multiplyScalar(0.8);
                             } else if (distToRoad < halfWidth + 4) {
                                 // Shoulder blending zone (4m wide)
                                 const blend = (distToRoad - halfWidth) / 4;
                                 // Smoothstep blend
                                 const t = blend * blend * (3 - 2 * blend);
                                 h = MathUtils.lerp(roadH - 0.2, h, t);
+
+                                // Color blend: Mud -> Grass
+                                // More mud near road, fading to grass
+                                const shoulderColor = mudColor.clone().lerp(dryColor, blend);
+                                finalColor.lerp(shoulderColor, 1.0 - blend * 0.8);
                             }
                         }
                     }
 
                     // Set Z
                     pos.setZ(i, h);
+
+                    // Set Color
+                    col.setXYZ(i, finalColor.r, finalColor.g, finalColor.b);
                 }
 
                 pos.needsUpdate = true;
+                col.needsUpdate = true;
                 parent.geometry.computeVertexNormals();
                 (parent.geometry as any).userData.generated = true;
             }}

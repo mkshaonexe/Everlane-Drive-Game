@@ -28,8 +28,8 @@ export const TerrainChunk = ({ position, noise }: TerrainChunkProps) => {
         */}
                 <ChunkMeshLogic noise={noise} worldX={x} worldZ={z} resolution={resolution} />
                 <meshStandardMaterial
-                    color="#3a5a40"
-                    roughness={0.9}
+                    color="#5c8d45" // Richer, happier green
+                    roughness={1.0}
                     side={DoubleSide}
                     wireframe={false}
                 />

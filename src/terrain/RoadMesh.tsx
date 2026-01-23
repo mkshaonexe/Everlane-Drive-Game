@@ -113,8 +113,9 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
             <mesh receiveShadow castShadow userData={{ isRoad: true }}>
                 <primitive object={roadGeometry} attach="geometry" />
                 <meshStandardMaterial
-                    color="#222"
-                    roughness={0.8}
+                    color="#1a1a1a" // Dark asphalt
+                    roughness={0.9} // Very rough/matte
+                    metalness={0.1}
                     side={DoubleSide}
                 />
             </mesh>
@@ -123,7 +124,7 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
             <points>
                 <primitive object={laneMarkingsGeometry} attach="geometry" />
                 <pointsMaterial
-                    color="#ffffff"
+                    color="#f0f0f0" // Brighter white markings
                     size={0.2}
                     sizeAttenuation={true}
                 />

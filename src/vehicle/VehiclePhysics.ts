@@ -112,7 +112,15 @@ export class VehiclePhysics {
 
             // Simple suspension snap to avg ground height
             const targetY = this.groundHeight + 0.5;
-            this.position.y += (targetY - this.position.y) * 15 * delta;
+
+            // EMERGENCY GROUND SNAP: If we are significantly below the detected ground, snap up immediately
+            // This prevents "getting stuck inside the ground"
+            if (this.position.y < this.groundHeight - 0.5) {
+                this.position.y = targetY;
+                this.velocity.y = 0;
+            } else {
+                this.position.y += (targetY - this.position.y) * 15 * delta;
+            }
         }
 
         // Apply velocity
@@ -136,9 +144,10 @@ export class VehiclePhysics {
 
         for (let i = 0; i < 4; i++) {
             const offset = this.wheelOffsets[i].clone().applyQuaternion(this.rotation);
-            const rayOrigin = this.position.clone().add(offset).add(new Vector3(0, 5, 0));
+            const rayOrigin = this.position.clone().add(offset).add(new Vector3(0, 50, 0)); // Cast from much higher
             const rayDir = new Vector3(0, -1, 0);
 
+            this.raycaster.far = 100; // Increased range
             this.raycaster.set(rayOrigin, rayDir);
             const intersects = this.raycaster.intersectObjects(terrainObjects, true);
 

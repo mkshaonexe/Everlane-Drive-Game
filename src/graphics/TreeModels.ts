@@ -9,13 +9,13 @@ export const birchBarkMaterial = new MeshStandardMaterial({
 
 // Autumn foliage materials
 export const goldenFoliageMaterial = new MeshStandardMaterial({
-    color: '#d4a52c',
+    color: '#e6b83a', // Brighter gold
     roughness: 0.8,
     side: DoubleSide,
 });
 
 export const orangeFoliageMaterial = new MeshStandardMaterial({
-    color: '#c97a2c',
+    color: '#e68a2e', // Brighter orange
     roughness: 0.8,
     side: DoubleSide,
 });

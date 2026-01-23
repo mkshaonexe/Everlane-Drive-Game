@@ -53,8 +53,10 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution, roadMask }: { noise
 
                 // Force update if roadMask changes or on first load
                 // We use a timestamp or check if generated with current mask
-                if ((parent.geometry as any).userData?.generated) return;
-                if (!(parent.geometry as any).userData) (parent.geometry as any).userData = {};
+                const geometry = parent.geometry as any;
+                if (!geometry.userData) geometry.userData = {};
+
+                if (geometry.userData.generated) return;
 
                 const pos = parent.geometry.attributes.position as any;
 

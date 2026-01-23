@@ -1,6 +1,6 @@
 
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls } from '@react-three/drei'
+
 import { Vehicle } from './vehicle/Vehicle'
 import { Engine } from './core/Engine';
 import { Lighting } from './graphics/Lighting';
@@ -8,7 +8,7 @@ import { Weather } from './graphics/Weather';
 import { DynamicWorld } from './core/DynamicWorld';
 import { useRef } from 'react';
 import { Group } from 'three';
-// import { PostProcessing } from './graphics/PostProcessing';
+import { PostProcessing } from './graphics/PostProcessing';
 
 export function Scene() {
     const terrainGroupRef = useRef<Group>(null);
@@ -26,7 +26,7 @@ export function Scene() {
                 {/* Graphics Systems */}
                 <Lighting />
                 <Weather />
-                {/* <PostProcessing /> */}
+                <PostProcessing />
 
                 {/* Dynamic World with Infinite Generation */}
                 <DynamicWorld terrainGroupRef={terrainGroupRef} />
@@ -37,8 +37,8 @@ export function Scene() {
                 {/* Vehicle - spawn on the road, further along the path */}
                 <Vehicle position={[0, 5, 50]} terrainGroup={terrainGroupRef} />
 
-                {/* Controls - Disable Orbit if using Chase Cam, or keep as debug override */}
-                <OrbitControls />
+                {/* OrbitControls disabled in favor of CameraController, but can be useful for debug if needed */}
+                {/* <OrbitControls /> */}
             </Canvas>
         </div>
     )

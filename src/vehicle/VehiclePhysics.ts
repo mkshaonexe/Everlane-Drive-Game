@@ -216,10 +216,20 @@ export class VehiclePhysics {
         // TODO: Add pitch/roll damping/restoring forces to keep car upright
         // For now, keep rotation strictly yaw-based to prevent flipping bugs unless on serious terrain
         if (this.onGround) {
-            // Align slightly to normal?
-            // With spring suspension, pitch/roll happens naturally if springs are independent
-            // Since we just summed forces to Y, we lost the tilt data.
-            // Future step: Apply torque from springs to rotation.
+            // Apply damping to align car with "up" vector (0, 1, 0) for stability
+            // This acts like anti-roll bars and restores upright position
+            const predictedUp = new Vector3(0, 1, 0).applyQuaternion(this.rotation);
+            const targetUp = new Vector3(0, 1, 0);
+
+            // Calculate rotation needed to align predictedUp with targetUp
+            const correctionQuat = new Quaternion().setFromUnitVectors(predictedUp, targetUp);
+
+            // Apply a fraction of this correction (slerp)
+            const dampingFactor = 5.0 * delta; // Adjust strength
+            const slerpedCorrection = new Quaternion().slerp(correctionQuat, Math.min(dampingFactor, 1.0));
+
+            // Apply to current rotation
+            this.rotation.premultiply(slerpedCorrection);
         }
     }
 }

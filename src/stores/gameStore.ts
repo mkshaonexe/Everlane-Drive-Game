@@ -64,8 +64,8 @@ export const useGameStore = create<GameState>((set) => ({
     setFreeLookActive: (active) => set({ isFreeLookActive: active }),
     toggleFreeLookButton: () => set((state) => ({
         isFreeLookButtonActive: !state.isFreeLookButtonActive,
-        isFreeLookActive: !state.isFreeLookButtonActive,
-        // Reset angles when toggling off
+        // Don't auto-activate free look - still need right-click to rotate
+        // Reset angles when toggling off the button
         freeLookYaw: state.isFreeLookButtonActive ? 0 : state.freeLookYaw,
         freeLookPitch: state.isFreeLookButtonActive ? 0 : state.freeLookPitch,
     })),
@@ -78,8 +78,8 @@ export const useGameStore = create<GameState>((set) => ({
 
     // Camera Zoom Actions
     updateCameraZoom: (delta) => set((state) => ({
-        // Clamp zoom distance between 3 and 20 units
-        cameraDistance: Math.max(3, Math.min(20, state.cameraDistance + delta)),
+        // Clamp zoom distance between 3 and 50 units (increased range)
+        cameraDistance: Math.max(3, Math.min(50, state.cameraDistance + delta)),
     })),
 
     // Road Data Actions

@@ -26,7 +26,7 @@ export function FreeLookButton() {
                 }
                 backdrop-blur-sm
             `}
-            title={isFreeLookButtonActive ? "Exit Free Look (Click or Right-Click)" : "Enable Free Look"}
+            title={isFreeLookButtonActive ? "Persistent Camera ON (angles stay after release)" : "Enable Persistent Camera (right-click to rotate)"}
         >
             {/* Eye Icon SVG */}
             <svg

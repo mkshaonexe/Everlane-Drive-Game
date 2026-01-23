@@ -85,13 +85,10 @@ export class VehicleController {
     };
 
     private onMouseDown = (event: MouseEvent) => {
-        // Right mouse button (button 2)
+        // Right mouse button (button 2) - always activate free look for rotation
         if (event.button === 2) {
             const store = useGameStore.getState();
-            // Only activate via right-click if button toggle is not active
-            if (!store.isFreeLookButtonActive) {
-                store.setFreeLookActive(true);
-            }
+            store.setFreeLookActive(true);
         }
         // Middle mouse button (button 1) - reset camera angle
         if (event.button === 1) {
@@ -103,12 +100,13 @@ export class VehicleController {
     private onMouseUp = (event: MouseEvent) => {
         if (event.button === 2) {
             const store = useGameStore.getState();
-            // Only deactivate if it was a right-click hold (not button toggle)
+            store.setFreeLookActive(false);
+            // If eye button is NOT active, reset angles on release (old behavior)
+            // If eye button IS active, keep the angles (persistent camera)
             if (!store.isFreeLookButtonActive) {
-                store.setFreeLookActive(false);
-                // DON'T reset angles - camera stays at the rotated position
-                // User can middle-click to reset camera angle
+                store.resetFreeLookAngles();
             }
+            // When eye button is active, angles persist after release
         }
     };
 

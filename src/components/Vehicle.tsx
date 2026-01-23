@@ -15,20 +15,20 @@ export function Vehicle({ position }: VehicleProps) {
             </mesh>
 
             {/* Visual Wheels (Static for now) */}
-            <mesh position={[0.6, -0.25, 0.8]}>
-                <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} rotation={[0, 0, Math.PI / 2]} />
+            <mesh position={[0.6, -0.25, 0.8]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} />
                 <meshStandardMaterial color="#333" />
             </mesh>
-            <mesh position={[-0.6, -0.25, 0.8]}>
-                <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} rotation={[0, 0, Math.PI / 2]} />
+            <mesh position={[-0.6, -0.25, 0.8]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} />
                 <meshStandardMaterial color="#333" />
             </mesh>
-            <mesh position={[0.6, -0.25, -0.8]}>
-                <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} rotation={[0, 0, Math.PI / 2]} />
+            <mesh position={[0.6, -0.25, -0.8]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} />
                 <meshStandardMaterial color="#333" />
             </mesh>
-            <mesh position={[-0.6, -0.25, -0.8]}>
-                <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} rotation={[0, 0, Math.PI / 2]} />
+            <mesh position={[-0.6, -0.25, -0.8]} rotation={[0, 0, Math.PI / 2]}>
+                <cylinderGeometry args={[0.3, 0.3, 0.2, 16]} />
                 <meshStandardMaterial color="#333" />
             </mesh>
         </group>

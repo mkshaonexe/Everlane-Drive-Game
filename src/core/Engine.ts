@@ -10,7 +10,7 @@ interface EngineProps {
 export const Engine = ({ onPhysicsUpdate, paused = false }: EngineProps) => {
     const timeAccumulator = useRef(0);
 
-    useFrame((state, delta) => {
+    useFrame((_, delta) => {
         if (paused) return;
 
         // Clamp delta time to prevent spiral of death

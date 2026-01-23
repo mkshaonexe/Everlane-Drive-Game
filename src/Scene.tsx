@@ -1,34 +1,61 @@
 import { Canvas } from '@react-three/fiber'
 import { OrbitControls, Environment } from '@react-three/drei'
 import { Vehicle } from './components/Vehicle'
+import { Engine } from './core/Engine';
+import { TerrainChunk } from './terrain/TerrainChunk';
+import { NoiseGenerator } from './terrain/NoiseGenerator';
+import { RoadGenerator } from './terrain/RoadGenerator';
+import { RoadMesh } from './terrain/RoadMesh';
+import { useMemo } from 'react';
+import { Vector3 } from 'three';
+import { CHUNK_SIZE } from './utils/constants';
 
 export function Scene() {
+    const noise = useMemo(() => new NoiseGenerator(), []);
+    const roadPath = useMemo(() => {
+        const roadGen = new RoadGenerator(noise);
+        // Generate a road starting at 0,0,0 going forward
+        return roadGen.generatePath(new Vector3(0, 0, 0), new Vector3(0, 0, 1), 400);
+    }, [noise]);
+
     return (
         <div className="w-full h-full bg-slate-900">
-            <Canvas shadows camera={{ position: [5, 5, 5], fov: 50 }}>
+            <Canvas shadows camera={{ position: [0, 50, 100], fov: 50 }}>
+                {/* Core Engine Loop */}
+                <Engine
+                    onPhysicsUpdate={(_dt) => {
+                        // console.log("Fixed step", dt);
+                    }}
+                />
+
                 {/* Lights */}
                 <ambientLight intensity={0.5} />
                 <directionalLight
-                    position={[10, 10, 5]}
-                    intensity={1}
+                    position={[10, 50, 20]}
+                    intensity={1.5}
                     castShadow
                     shadow-mapSize={[2048, 2048]}
                 />
                 <Environment preset="sunset" />
 
-                {/* World Objects */}
-                <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
-                    <planeGeometry args={[100, 100]} />
-                    <meshStandardMaterial color="#333" />
-                </mesh>
+                {/* Terrain Chunks (3x3 grid around center) */}
+                <group>
+                    <TerrainChunk position={[0, 0, 0]} noise={noise} />
+                    <TerrainChunk position={[CHUNK_SIZE, 0, 0]} noise={noise} />
+                    <TerrainChunk position={[-CHUNK_SIZE, 0, 0]} noise={noise} />
+                    <TerrainChunk position={[0, 0, CHUNK_SIZE]} noise={noise} />
+                    <TerrainChunk position={[0, 0, -CHUNK_SIZE]} noise={noise} />
+                </group>
 
-                <gridHelper args={[100, 100]} />
+                {/* Procedural Road */}
+                <RoadMesh path={roadPath} />
 
                 {/* Vehicle */}
-                <Vehicle position={[0, 1, 0]} />
+                <Vehicle position={[0, 10, 0]} />
 
                 {/* Controls */}
                 <OrbitControls />
+                <gridHelper args={[500, 10]} />
             </Canvas>
         </div>
     )

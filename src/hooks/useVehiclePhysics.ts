@@ -3,7 +3,7 @@ import { Group, Vector3 } from 'three'
 import { useFrame } from '@react-three/fiber'
 import { useControls } from './useControls'
 
-export function useVehiclePhysics(initialPosition: [number, number, number]) {
+export function useVehiclePhysics(_initialPosition: [number, number, number]) {
     const chassisRef = useRef<Group>(null)
     const controls = useControls()
 
@@ -11,7 +11,7 @@ export function useVehiclePhysics(initialPosition: [number, number, number]) {
     const velocity = useRef(new Vector3(0, 0, 0))
     // const angularVelocity = useRef(new Vector3(0, 0, 0))
 
-    useFrame((state, delta) => {
+    useFrame((_, delta) => {
         if (!chassisRef.current) return
 
         const chassis = chassisRef.current

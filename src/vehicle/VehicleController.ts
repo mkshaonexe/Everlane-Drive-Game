@@ -1,4 +1,5 @@
 import { AudioManager } from '../audio/AudioManager';
+import { useGameStore } from '../stores/gameStore';
 
 export interface InputState {
     forward: boolean;
@@ -18,6 +19,9 @@ export class VehicleController {
         brake: false,
         reset: false,
     };
+
+    // Free look mouse sensitivity
+    private mouseSensitivity: number = 0.003;
 
     constructor() {
         this.addEventListeners();
@@ -80,13 +84,69 @@ export class VehicleController {
         }
     };
 
+    private onMouseDown = (event: MouseEvent) => {
+        // Right mouse button (button 2)
+        if (event.button === 2) {
+            const store = useGameStore.getState();
+            // Only activate via right-click if button toggle is not active
+            if (!store.isFreeLookButtonActive) {
+                store.setFreeLookActive(true);
+            }
+        }
+    };
+
+    private onMouseUp = (event: MouseEvent) => {
+        if (event.button === 2) {
+            const store = useGameStore.getState();
+            // Only deactivate if it was a right-click hold (not button toggle)
+            if (!store.isFreeLookButtonActive) {
+                store.setFreeLookActive(false);
+                store.resetFreeLookAngles();
+            }
+        }
+    };
+
+    private onMouseMove = (event: MouseEvent) => {
+        const store = useGameStore.getState();
+
+        // Only update angles if free look is active
+        if (store.isFreeLookActive) {
+            const deltaX = -event.movementX * this.mouseSensitivity;
+            const deltaY = -event.movementY * this.mouseSensitivity;
+            store.updateFreeLookAngles(deltaX, deltaY);
+        }
+    };
+
+    private onContextMenu = (event: MouseEvent) => {
+        // Prevent right-click context menu
+        event.preventDefault();
+    };
+
+    private onWheel = (event: WheelEvent) => {
+        const store = useGameStore.getState();
+        // Prevent zoom when free look is active
+        if (store.isFreeLookActive) {
+            event.preventDefault();
+        }
+    };
+
     private addEventListeners() {
         window.addEventListener('keydown', this.onKeyDown);
         window.addEventListener('keyup', this.onKeyUp);
+        window.addEventListener('mousedown', this.onMouseDown);
+        window.addEventListener('mouseup', this.onMouseUp);
+        window.addEventListener('mousemove', this.onMouseMove);
+        window.addEventListener('contextmenu', this.onContextMenu);
+        window.addEventListener('wheel', this.onWheel, { passive: false });
     }
 
     public dispose() {
         window.removeEventListener('keydown', this.onKeyDown);
         window.removeEventListener('keyup', this.onKeyUp);
+        window.removeEventListener('mousedown', this.onMouseDown);
+        window.removeEventListener('mouseup', this.onMouseUp);
+        window.removeEventListener('mousemove', this.onMouseMove);
+        window.removeEventListener('contextmenu', this.onContextMenu);
+        window.removeEventListener('wheel', this.onWheel);
     }
 }

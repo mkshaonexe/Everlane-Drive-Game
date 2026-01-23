@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { CatmullRomCurve3, DoubleSide, BufferGeometry, Float32BufferAttribute, Vector3 } from 'three';
+import { mergeBufferGeometries } from 'three-stdlib';
 
 interface RoadMeshProps {
     path: CatmullRomCurve3;
@@ -49,62 +50,112 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
         return geo;
     }, [path, width]);
 
-    // Lane markings geometry
+    // Lane markings geometry (Solid Mesh)
     const laneMarkingsGeometry = useMemo(() => {
-        const segments = 200;
-        const positions: number[] = [];
+        const segments = 400; // Higher resolution for smooth curves
         const up = new Vector3(0, 1, 0);
+        const geometries: BufferGeometry[] = [];
 
         // Center dashed line
-        const dashLength = 3; // 3m dashes
-        const gapLength = 6; // 6m gaps
-        const lineWidth = 0.15; // 15cm wide
+        const dashLength = 3;
+        const gapLength = 6;
+        const lineWidth = 0.2;
 
-        for (let i = 0; i <= segments; i++) {
+        for (let i = 0; i < segments; i++) {
             const t = i / segments;
-            const point = path.getPointAt(t);
-            const tangent = path.getTangentAt(t).normalize();
-            const right = new Vector3().crossVectors(tangent, up).normalize();
+            const tNext = (i + 1) / segments;
 
-            // Distance along road
+            // Distance along road to check dash pattern
             const distance = t * path.getLength();
             const cycleLength = dashLength + gapLength;
             const posInCycle = distance % cycleLength;
 
-            // Only draw during dash portion
+            // Simple dashed line logic: One segment per step if within dash
+            // A better way is to generate quads following the path.
+            // Let's generate a continuous strip for dashes
+
+            // Check if start of this segment is within a dash
             if (posInCycle < dashLength) {
-                // Center line
-                const center = point.clone();
-                const leftDash = center.clone().add(right.clone().multiplyScalar(-lineWidth / 2));
-                const rightDash = center.clone().add(right.clone().multiplyScalar(lineWidth / 2));
+                const p1 = path.getPointAt(t);
+                const p2 = path.getPointAt(tNext);
+                const tangent = path.getTangentAt(t).normalize();
+                const right = new Vector3().crossVectors(tangent, up).normalize();
 
-                positions.push(leftDash.x, leftDash.y + 0.06, leftDash.z);
-                positions.push(rightDash.x, rightDash.y + 0.06, rightDash.z);
+                // Create a quad for this segment of the dash
+                // Offset slightly higher than road
+                const yOffset = 0.18;
+
+                // 4 Corners of the segment
+                const l1 = p1.clone().add(right.clone().multiplyScalar(-lineWidth / 2));
+                const r1 = p1.clone().add(right.clone().multiplyScalar(lineWidth / 2));
+                const l2 = p2.clone().add(right.clone().multiplyScalar(-lineWidth / 2));
+                const r2 = p2.clone().add(right.clone().multiplyScalar(lineWidth / 2));
+
+                const pts = [
+                    l1.x, l1.y + yOffset, l1.z,
+                    r1.x, r1.y + yOffset, r1.z,
+                    l2.x, l2.y + yOffset, l2.z,
+                    r2.x, r2.y + yOffset, r2.z
+                ];
+
+                const geo = new BufferGeometry();
+                geo.setAttribute('position', new Float32BufferAttribute(pts, 3));
+                geo.setIndex([0, 2, 1, 1, 2, 3]);
+                geometries.push(geo);
             }
-
-            // Edge lines (solid, narrower)
-            const edgeWidth = 0.1; // 10cm wide
-
-            // Left edge
-            const leftEdgeCenter = point.clone().add(right.clone().multiplyScalar(-width / 2 + 0.3));
-            const leftEdgeLeft = leftEdgeCenter.clone().add(right.clone().multiplyScalar(-edgeWidth / 2));
-            const leftEdgeRight = leftEdgeCenter.clone().add(right.clone().multiplyScalar(edgeWidth / 2));
-
-            positions.push(leftEdgeLeft.x, leftEdgeLeft.y + 0.06, leftEdgeLeft.z);
-            positions.push(leftEdgeRight.x, leftEdgeRight.y + 0.06, leftEdgeRight.z);
-
-            // Right edge
-            const rightEdgeCenter = point.clone().add(right.clone().multiplyScalar(width / 2 - 0.3));
-            const rightEdgeLeft = rightEdgeCenter.clone().add(right.clone().multiplyScalar(-edgeWidth / 2));
-            const rightEdgeRight = rightEdgeCenter.clone().add(right.clone().multiplyScalar(edgeWidth / 2));
-
-            positions.push(rightEdgeLeft.x, rightEdgeLeft.y + 0.06, rightEdgeLeft.z);
-            positions.push(rightEdgeRight.x, rightEdgeRight.y + 0.06, rightEdgeRight.z);
         }
 
-        const geo = new BufferGeometry();
-        geo.setAttribute('position', new Float32BufferAttribute(positions, 3));
-        return geo;
+        // Edge lines (Solid)
+        const edgeWidth = 0.15;
+        const yOffsetEdge = 0.18;
+
+        // Continuous strips for edges
+        const leftEdgeGeo = new BufferGeometry();
+        const rightEdgeGeo = new BufferGeometry();
+
+        const leftPositions: number[] = [];
+        const rightPositions: number[] = [];
+        const edgeIndices: number[] = [];
+
+        for (let i = 0; i <= segments; i++) {
+            const t = i / segments;
+            const p = path.getPointAt(t);
+            const tangent = path.getTangentAt(t).normalize();
+            const right = new Vector3().crossVectors(tangent, up).normalize();
+
+            // Left Edge
+            const centerL = p.clone().add(right.clone().multiplyScalar(-width / 2 + 0.3));
+            const l1 = centerL.clone().add(right.clone().multiplyScalar(-edgeWidth / 2));
+            const r1 = centerL.clone().add(right.clone().multiplyScalar(edgeWidth / 2));
+
+            // Right Edge
+            const centerR = p.clone().add(right.clone().multiplyScalar(width / 2 - 0.3));
+            const l2 = centerR.clone().add(right.clone().multiplyScalar(-edgeWidth / 2));
+            const r2 = centerR.clone().add(right.clone().multiplyScalar(edgeWidth / 2));
+
+            leftPositions.push(l1.x, l1.y + yOffsetEdge, l1.z, r1.x, r1.y + yOffsetEdge, r1.z);
+            rightPositions.push(l2.x, l2.y + yOffsetEdge, l2.z, r2.x, r2.y + yOffsetEdge, r2.z);
+
+            if (i < segments) {
+                const base = i * 2;
+                edgeIndices.push(base, base + 1, base + 2, base + 1, base + 3, base + 2);
+            }
+        }
+
+        leftEdgeGeo.setAttribute('position', new Float32BufferAttribute(leftPositions, 3));
+        leftEdgeGeo.setIndex(edgeIndices);
+
+        rightEdgeGeo.setAttribute('position', new Float32BufferAttribute(rightPositions, 3));
+        rightEdgeGeo.setIndex(edgeIndices);
+
+        geometries.push(leftEdgeGeo, rightEdgeGeo);
+
+        // Merge all line geometries
+        if (geometries.length > 0) {
+            const merged = mergeBufferGeometries(geometries);
+            return merged || new BufferGeometry();
+        }
+        return new BufferGeometry();
     }, [path, width]);
 
     return (
@@ -120,15 +171,18 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
                 />
             </mesh>
 
-            {/* Lane markings */}
-            <points>
+            {/* Lane markings Mesh */}
+            <mesh castShadow receiveShadow>
                 <primitive object={laneMarkingsGeometry} attach="geometry" />
-                <pointsMaterial
-                    color="#f0f0f0" // Brighter white markings
-                    size={0.2}
-                    sizeAttenuation={true}
+                <meshStandardMaterial
+                    color="#ffffff"
+                    emissive="#aaaaaa"
+                    emissiveIntensity={0.2}
+                    roughness={0.5}
+                    metalness={0.0}
+                    side={DoubleSide}
                 />
-            </points>
+            </mesh>
         </group>
     );
 };

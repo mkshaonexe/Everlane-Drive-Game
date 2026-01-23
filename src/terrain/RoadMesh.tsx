@@ -36,14 +36,19 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
     }, []);
 
     const roadGeometry = useMemo(() => {
-        const segments = 200;
+        // Dynamic segments based on length for consistent high resolution
+        // At least 200, or 1 segment per meter (whichever is higher)
+        // This solves the low-poly road clipping into hills issue
+        const length = path.getLength();
+        const segments = Math.max(200, Math.floor(length));
+
         const positions: number[] = [];
         const uvs: number[] = [];
         const indices: number[] = [];
         const up = new Vector3(0, 1, 0);
 
         const shoulderWidth = 2.5;
-        const shoulderDrop = 0.4; // Reduced from 1.5m to 0.4m for seamless ground integration
+        const shoulderDrop = 0.2; // Reduced further for tighter ground integration
 
         for (let i = 0; i <= segments; i++) {
             const t = i / segments;
@@ -66,7 +71,7 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
 
             // Vertices order: LeftShoulder, LeftRoad, RightRoad, RightShoulder
             // Y offset reduced to sit nearly flush with terrain
-            const yOffset = 0.05; // Reduced from 0.15 to prevent floating appearance
+            const yOffset = 0.02; // Reduced from 0.05 to 0.02 to eliminate gap
 
             // 0: Left Shoulder
             positions.push(leftShoulder.x, leftShoulder.y + yOffset, leftShoulder.z);
@@ -115,7 +120,9 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
 
     // Lane markings geometry (Solid Mesh)
     const laneMarkingsGeometry = useMemo(() => {
-        const segments = 400; // Higher resolution for smooth curves
+        // High resolution for smooth curves matching road
+        const length = path.getLength();
+        const segments = Math.max(400, Math.floor(length * 2)); // 2 segs per meter for markings
         const up = new Vector3(0, 1, 0);
         const geometries: BufferGeometry[] = [];
 

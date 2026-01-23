@@ -129,7 +129,7 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                     if (roadH !== null) {
                         // CRITICAL FIX: Always ensure terrain is BELOW road level
                         // This prevents road from rendering inside/under terrain hills
-                        const terrainCarvingOffset = 0.5; // Deep carving offset (was 0.08)
+                        const terrainCarvingOffset = 0.1; // Deep carving offset (reduced from 0.5 to 0.1 for tightness)
 
                         // Under road surface - flatten completely and force carve
                         if (distToRoad < halfWidth) {
@@ -144,8 +144,8 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                             const smoothBlend = blend * blend * (3 - 2 * blend); // smoothstep
 
                             // Height: FORCE terrain to be at or below road level
-                            // Blend from slightly below road to road level
-                            const targetH = MathUtils.lerp(roadH - 0.3, roadH - 0.05, smoothBlend);
+                            // Blend from slightly below road (matching carving offset) to road level
+                            const targetH = MathUtils.lerp(roadH - 0.1, roadH - 0.05, smoothBlend);
                             // If terrain is higher than target, force it down
                             h = Math.min(h, targetH);
 

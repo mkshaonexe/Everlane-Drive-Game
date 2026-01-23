@@ -9,7 +9,7 @@ import { RoadGenerator } from './terrain/RoadGenerator';
 import { RoadMesh } from './terrain/RoadMesh';
 import { Lighting } from './graphics/Lighting';
 import { Weather } from './graphics/Weather';
-// import { Vegetation } from './graphics/Vegetation';
+import { Vegetation } from './graphics/Vegetation';
 import { useMemo, useRef } from 'react';
 import { Vector3, Group } from 'three';
 import { CHUNK_SIZE } from './utils/constants';
@@ -52,7 +52,7 @@ export function Scene() {
                         ].map((pos, i) => (
                             <group key={i}>
                                 <TerrainChunk position={pos as [number, number, number]} noise={noise} />
-                                {/* <Vegetation chunkPosition={pos as [number, number, number]} noise={noise} /> */}
+                                <Vegetation chunkPosition={pos as [number, number, number]} noise={noise} />
                             </group>
                         ))}
                     </group>

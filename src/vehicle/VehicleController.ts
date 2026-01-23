@@ -1,3 +1,5 @@
+import { AudioManager } from '../audio/AudioManager';
+
 export interface InputState {
     forward: boolean;
     backward: boolean;
@@ -22,6 +24,9 @@ export class VehicleController {
     }
 
     private onKeyDown = (event: KeyboardEvent) => {
+        // Resume audio context on user interaction
+        AudioManager.getInstance().resume();
+
         switch (event.code) {
             case 'ArrowUp':
             case 'KeyW':

@@ -5,6 +5,8 @@ import { VehicleModel } from './VehicleModel';
 import { VehiclePhysics } from './VehiclePhysics';
 import { VehicleController } from './VehicleController';
 import { CameraController } from './CameraController';
+import { AmbientAudio } from '../audio/AmbientAudio';
+import { EngineAudio } from '../audio/EngineAudio';
 
 interface VehicleProps {
     position?: [number, number, number];
@@ -26,9 +28,19 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
     const cameraController = useMemo(() => new CameraController(camera), [camera]);
 
     // Cleanup controller events
+    // Cleanup controller events
     useEffect(() => {
         return () => controller.dispose();
     }, [controller]);
+
+    const engineAudio = useMemo(() => new EngineAudio(), []);
+
+    useEffect(() => {
+        engineAudio.start();
+        return () => engineAudio.stop();
+    }, [engineAudio]);
+
+    const speedRef = useRef(0);
 
     useFrame((_state, delta) => {
         if (!groupRef.current) return;
@@ -44,6 +56,11 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         const dt = Math.min(delta, 0.1);
         physics.update(dt, controller.input, colliders);
 
+        // Update Audio
+        const speed = physics.velocity.length();
+        engineAudio.update(speed);
+        speedRef.current = speed;
+
         // 3. Update Visuals
         groupRef.current.position.copy(physics.position);
         groupRef.current.quaternion.copy(physics.rotation);
@@ -55,6 +72,7 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
     return (
         <group ref={groupRef}>
             <VehicleModel />
+            <AmbientAudio speedRef={speedRef} />
         </group>
     );
 }

@@ -14,7 +14,7 @@ interface GameState {
 export const useGameStore = create<GameState>((set) => ({
     speed: 0,
     distance: 0,
-    isPaused: false,
+    isPaused: true, // Start paused to show menu
 
     setSpeed: (speed) => set({ speed }),
     addDistance: (delta) => set((state) => ({ distance: state.distance + delta })),

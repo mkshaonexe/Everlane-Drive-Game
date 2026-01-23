@@ -3,11 +3,19 @@ import { NoiseGenerator } from './NoiseGenerator';
 
 export class RoadGenerator {
     noise: NoiseGenerator;
+    private lastPoint: Vector3;
+    private lastDirection: Vector3;
+    private allPoints: Vector3[] = [];
 
     constructor(noise: NoiseGenerator) {
         this.noise = noise;
+        this.lastPoint = new Vector3(0, 0, 0);
+        this.lastDirection = new Vector3(0, 0, 1); // Start heading forward (positive Z)
     }
 
+    /**
+     * Generate initial road path
+     */
     generatePath(startPoint: Vector3, startDirection: Vector3, length: number = 200): CatmullRomCurve3 {
         const points: Vector3[] = [startPoint];
         let currentPos = startPoint.clone();
@@ -17,40 +25,98 @@ export class RoadGenerator {
         const segments = length / segmentLength;
 
         for (let i = 0; i < segments; i++) {
-            // Simple wander behavior for now
-            // In full version, this samples multiple directions for lowest cost
+            const nextPoint = this.generateNextSegment(currentPos, currentDir, segmentLength);
+            points.push(nextPoint.position);
 
-            // Add slight noise to direction
-            const angleNoise = this.noise.getNoise(currentPos.x, currentPos.z, 0.05) * 0.5; // Radians turn
-
-            const newDir = currentDir.clone().applyAxisAngle(new Vector3(0, 1, 0), angleNoise);
-            currentDir.lerp(newDir, 0.5).normalize();
-
-            const nextPos = currentPos.clone().add(currentDir.clone().multiplyScalar(segmentLength));
-
-            // Sample terrain height
-            const height = this.noise.getHeight(nextPos.x, nextPos.z);
-
-            // Slope limiting/Smoothing
-            // Don't allow road to go up/down too fast compared to previous point
-            const prevY = currentPos.y;
-            const heightDiff = height - prevY;
-            const maxSlopePerSegment = 2.0; // Max 2m rise per 20m run (~10% grade)
-
-            if (heightDiff > maxSlopePerSegment) {
-                nextPos.y = prevY + maxSlopePerSegment;
-            } else if (heightDiff < -maxSlopePerSegment) {
-                nextPos.y = prevY - maxSlopePerSegment;
-            } else {
-                nextPos.y = height + 0.5;
-                // Blend slightly with previous to smooth further
-                nextPos.y = (nextPos.y + prevY) * 0.5;
-            }
-
-            points.push(nextPos);
-            currentPos = nextPos;
+            currentPos = nextPoint.position;
+            currentDir = nextPoint.direction;
         }
 
+        // Store state for continuous generation
+        this.lastPoint = currentPos;
+        this.lastDirection = currentDir;
+        this.allPoints = points;
+
         return new CatmullRomCurve3(points);
+    }
+
+    /**
+     * Extend the road path forward by a certain length
+     * Returns the new spline including all previous points
+     */
+    extendPath(additionalLength: number = 200): CatmullRomCurve3 {
+        const segmentLength = 20;
+        const segments = additionalLength / segmentLength;
+
+        let currentPos = this.lastPoint.clone();
+        let currentDir = this.lastDirection.clone();
+
+        for (let i = 0; i < segments; i++) {
+            const nextPoint = this.generateNextSegment(currentPos, currentDir, segmentLength);
+            this.allPoints.push(nextPoint.position);
+
+            currentPos = nextPoint.position;
+            currentDir = nextPoint.direction;
+        }
+
+        // Update state
+        this.lastPoint = currentPos;
+        this.lastDirection = currentDir;
+
+        return new CatmullRomCurve3(this.allPoints);
+    }
+
+    /**
+     * Generate a single road segment
+     */
+    private generateNextSegment(
+        currentPos: Vector3,
+        currentDir: Vector3,
+        segmentLength: number
+    ): { position: Vector3; direction: Vector3 } {
+        // Add noise-based wandering to direction
+        const angleNoise = this.noise.getNoise(currentPos.x, currentPos.z, 0.05) * 0.5; // Radians
+
+        const newDir = currentDir.clone().applyAxisAngle(new Vector3(0, 1, 0), angleNoise);
+        const smoothDir = currentDir.clone().lerp(newDir, 0.5).normalize();
+
+        const nextPos = currentPos.clone().add(smoothDir.clone().multiplyScalar(segmentLength));
+
+        // Sample terrain height
+        const height = this.noise.getHeight(nextPos.x, nextPos.z);
+
+        // Slope limiting - don't allow road to change elevation too quickly
+        const prevY = currentPos.y;
+        const heightDiff = height - prevY;
+        const maxSlopePerSegment = 2.0; // Max 2m rise per 20m run (~10% grade)
+
+        if (heightDiff > maxSlopePerSegment) {
+            nextPos.y = prevY + maxSlopePerSegment;
+        } else if (heightDiff < -maxSlopePerSegment) {
+            nextPos.y = prevY - maxSlopePerSegment;
+        } else {
+            nextPos.y = height + 0.5;
+            // Smooth with previous point
+            nextPos.y = (nextPos.y + prevY) * 0.5;
+        }
+
+        return {
+            position: nextPos,
+            direction: smoothDir
+        };
+    }
+
+    /**
+     * Get the current end point of the road
+     */
+    getLastPoint(): Vector3 {
+        return this.lastPoint.clone();
+    }
+
+    /**
+     * Get total road length generated
+     */
+    getTotalLength(): number {
+        return this.allPoints.length * 20; // Each segment is 20m
     }
 }

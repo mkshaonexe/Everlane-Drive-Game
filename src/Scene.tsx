@@ -3,26 +3,14 @@ import { Canvas } from '@react-three/fiber'
 import { OrbitControls } from '@react-three/drei'
 import { Vehicle } from './vehicle/Vehicle'
 import { Engine } from './core/Engine';
-import { TerrainChunk } from './terrain/TerrainChunk';
-import { NoiseGenerator } from './terrain/NoiseGenerator';
-import { RoadGenerator } from './terrain/RoadGenerator';
-import { RoadMesh } from './terrain/RoadMesh';
 import { Lighting } from './graphics/Lighting';
 import { Weather } from './graphics/Weather';
-import { Vegetation } from './graphics/Vegetation';
-import { useMemo, useRef } from 'react';
-import { Vector3, Group } from 'three';
-import { CHUNK_SIZE } from './utils/constants';
+import { DynamicWorld } from './core/DynamicWorld';
+import { useRef } from 'react';
+import { Group } from 'three';
 // import { PostProcessing } from './graphics/PostProcessing';
 
 export function Scene() {
-    const noise = useMemo(() => new NoiseGenerator(), []);
-    const roadPath = useMemo(() => {
-        const roadGen = new RoadGenerator(noise);
-        // Generate a road starting at 0,0,0 going forward
-        return roadGen.generatePath(new Vector3(0, 0, 0), new Vector3(0, 0, 1), 400);
-    }, [noise]);
-
     const terrainGroupRef = useRef<Group>(null);
 
     return (
@@ -40,26 +28,8 @@ export function Scene() {
                 <Weather />
                 {/* <PostProcessing /> */}
 
-                {/* Collidable Group (Terrain + Road) */}
-                <group ref={terrainGroupRef}>
-                    <group>
-                        {[
-                            [0, 0, 0],
-                            [CHUNK_SIZE, 0, 0],
-                            [-CHUNK_SIZE, 0, 0],
-                            [0, 0, CHUNK_SIZE],
-                            [0, 0, -CHUNK_SIZE]
-                        ].map((pos, i) => (
-                            <group key={i}>
-                                <TerrainChunk position={pos as [number, number, number]} noise={noise} />
-                                <Vegetation chunkPosition={pos as [number, number, number]} noise={noise} />
-                            </group>
-                        ))}
-                    </group>
-
-                    {/* Procedural Road */}
-                    <RoadMesh path={roadPath} />
-                </group>
+                {/* Dynamic World with Infinite Generation */}
+                <DynamicWorld terrainGroupRef={terrainGroupRef} />
 
                 {/* Fog for atmosphere */}
                 <fog attach="fog" args={['#0f172a', 20, 300]} />

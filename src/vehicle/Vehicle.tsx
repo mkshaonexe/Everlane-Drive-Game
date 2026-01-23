@@ -62,9 +62,10 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         speedRef.current = speed;
 
         // Update UI Store (throttled slightly if needed, but per frame is fine for simple store)
-        const { setSpeed, addDistance } = useGameStore.getState();
+        const { setSpeed, addDistance, setPosition } = useGameStore.getState();
         setSpeed(speed);
         addDistance(speed * dt); // Distance = Speed * Time
+        setPosition(physics.position.clone()); // Clone to avoid reference issues
 
         // 3. Update Visuals
         groupRef.current.position.copy(physics.position);

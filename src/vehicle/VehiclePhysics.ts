@@ -205,8 +205,38 @@ export class VehiclePhysics {
         this.dummyVec.copy(this.velocity).multiplyScalar(delta);
         this.position.add(this.dummyVec);
 
-        // Ground collision fail-safe (prevent falling through world indefinitely)
-        if (this.position.y < -50) {
+        // ============================================
+        // GROUND SAFETY NET - Prevent falling into void
+        // ============================================
+
+        // If no wheels are on ground and car is falling significantly
+        if (!this.onGround && this.velocity.y < -5) {
+            // Create virtual ground at estimated height (around 0-10m)
+            // This prevents the car from falling forever when off-road
+            const estimatedGround = 5; // Default ground level estimate
+
+            if (this.position.y < estimatedGround - 5) {
+                // Gently push car upward instead of teleporting
+                this.velocity.y = Math.max(this.velocity.y, 3);
+
+                // Slow down horizontal velocity when recovering
+                this.velocity.x *= 0.98;
+                this.velocity.z *= 0.98;
+                this.speed *= 0.95;
+            }
+        }
+
+        // Hard fail-safe: teleport back if fallen very deep
+        if (this.position.y < -30) {
+            // Find a safer respawn point (reset but keep some forward momentum)
+            this.position.y = 10;
+            this.velocity.y = 0;
+            // Keep some momentum instead of full reset
+            this.speed *= 0.5;
+        }
+
+        // Emergency full reset if fallen extremely deep (something went very wrong)
+        if (this.position.y < -100) {
             this.position.set(0, 10, 0);
             this.velocity.set(0, 0, 0);
             this.speed = 0;

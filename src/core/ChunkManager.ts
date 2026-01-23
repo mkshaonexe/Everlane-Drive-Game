@@ -13,7 +13,7 @@ export interface ChunkUpdate {
 
 export class ChunkManager {
     private loadedChunks: Set<string> = new Set();
-    private viewDistance: number = 3; // Chunks in each direction
+    private viewDistance: number = 5; // 5 chunks in each direction for better coverage
 
     /**
      * Get chunk coordinate from world position

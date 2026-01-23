@@ -44,11 +44,26 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
         }
         const col = geometry.attributes.color;
 
-        // Color palette - matching reference images with natural grass colors
-        const darkGrassColor = new THREE.Color('#4a7c3c'); // Deep green grass
-        const lightGrassColor = new THREE.Color('#6b9b4d'); // Medium green grass
-        const yellowGrassColor = new THREE.Color('#9bab5a'); // Yellow-green grass for hills
-        const brownGrassColor = new THREE.Color('#8b8b4b'); // Dry brownish grass accent
+        // ============================================
+        // COLOR PALETTE - Natural terrain colors
+        // ============================================
+
+        // Grass colors - lush green variations
+        const darkGrassColor = new THREE.Color('#3a6b2a');   // Deep green grass
+        const lightGrassColor = new THREE.Color('#5a8b4a');  // Medium green grass
+        const yellowGrassColor = new THREE.Color('#8b9b4a'); // Yellow-green grass for hills
+
+        // Soil/Dirt colors - brown earth tones
+        const richSoilColor = new THREE.Color('#6b4d33');    // Rich brown soil
+        const dirtColor = new THREE.Color('#8b7355');        // Light brown dirt
+        const sandyDirtColor = new THREE.Color('#a69070');   // Sandy dirt
+
+        // Road shoulder colors
+        const gravelColor = new THREE.Color('#7a7060');      // Gray-brown gravel
+        const roadEdgeDirtColor = new THREE.Color('#5a4a3a'); // Dark dirt near road
+
+        // Shoulder and transition zone widths - EXPANDED for smoother blending
+        const shoulderWidth = 25; // Total transition zone width in meters
 
         try {
             for (let i = 0; i < pos.count; i++) {
@@ -63,28 +78,48 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                 let h = noise.getHeight(wx, wz);
 
                 // Base grass color with smooth variation
-                let finalColor = darkGrassColor.clone();
+                const finalColor = darkGrassColor.clone();
 
                 // Multi-octave noise for smooth, natural color variation
-                const n1 = noise.getNoise(wx * 0.02, wz * 0.02, 0.1); // Large scale variation
-                const n2 = noise.getNoise(wx * 0.08, wz * 0.08, 0.1); // Medium detail
-                const combinedNoise = n1 * 0.6 + n2 * 0.4;
+                const n1 = noise.getNoise(wx * 0.015, wz * 0.015, 0.1); // Large scale variation
+                const n2 = noise.getNoise(wx * 0.06, wz * 0.06, 0.1);   // Medium detail
+                const n3 = noise.getNoise(wx * 0.12, wz * 0.12, 0.1);   // Fine detail
+                const combinedNoise = n1 * 0.5 + n2 * 0.35 + n3 * 0.15;
 
                 // Blend from dark grass to light grass based on noise
-                finalColor.lerp(lightGrassColor, combinedNoise * 0.5 + 0.3);
+                finalColor.lerp(lightGrassColor, combinedNoise * 0.6 + 0.2);
 
-                // Add yellow/dry grass on higher elevations and sun-facing slopes
-                const heightFactor = Math.min(1, Math.max(0, (h - 5) / 20)); // Higher areas get yellower
-                const yellowBlend = heightFactor * 0.4 + combinedNoise * 0.2;
+                // Add yellow/dry grass on higher elevations
+                const heightFactor = Math.min(1, Math.max(0, (h - 8) / 25));
+                const yellowBlend = heightFactor * 0.35 + combinedNoise * 0.15;
                 finalColor.lerp(yellowGrassColor, yellowBlend);
 
-                // Subtle brown accent based on different noise frequency
-                const brownNoise = noise.getNoise(wx * 0.15, wz * 0.15, 0.2);
-                if (brownNoise > 0.6) {
-                    finalColor.lerp(brownGrassColor, (brownNoise - 0.6) * 0.3);
+                // ============================================
+                // DIRT/SOIL PATCHES - Natural earth exposure
+                // ============================================
+
+                // Random dirt patches based on noise (simulating bare earth)
+                const dirtNoise = noise.getNoise(wx * 0.08, wz * 0.08, 0.3);
+                const dirtNoise2 = noise.getNoise(wx * 0.2, wz * 0.2, 0.5);
+                const combinedDirt = dirtNoise * 0.7 + dirtNoise2 * 0.3;
+
+                if (combinedDirt > 0.55) {
+                    // Exposed soil/dirt patches
+                    const dirtBlend = (combinedDirt - 0.55) * 2.0; // 0 to ~0.9
+                    finalColor.lerp(richSoilColor, dirtBlend * 0.6);
                 }
 
-                // Flatten under road - keep grass color, just flatten terrain
+                // Sandy/dry dirt in low areas
+                const lowAreaNoise = noise.getNoise(wx * 0.05, wz * 0.05, 0.2);
+                if (h < 3 && lowAreaNoise > 0.4) {
+                    const sandBlend = (1 - h / 3) * (lowAreaNoise - 0.4) * 2;
+                    finalColor.lerp(sandyDirtColor, sandBlend * 0.4);
+                }
+
+                // ============================================
+                // ROAD INTEGRATION - Smooth terrain blending
+                // ============================================
+
                 if (roadMask) {
                     const distToRoad = roadMask.getDistanceToRoad(wx, wz);
                     const roadH = roadMask.getRoadHeight(wx, wz);
@@ -92,29 +127,51 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                     const halfWidth = width * 0.5;
 
                     if (roadH !== null) {
+                        // Under road surface - flatten completely
                         if (distToRoad < halfWidth) {
-                            // Under road surface - flatten slightly below road
-                            h = roadH - 0.15;
-                            // Keep a subtle dark grass color under road (won't be visible)
-                            finalColor.copy(darkGrassColor).multiplyScalar(0.7);
-                        } else if (distToRoad < halfWidth + 2) {
-                            // Very close to road edge - smooth grass shoulder (2m wide)
-                            const blend = (distToRoad - halfWidth) / 2;
-                            const val = blend * blend * (3 - 2 * blend); // smoothstep
-                            h = MathUtils.lerp(roadH - 0.1, h, val);
-                            // Keep grass color - just slightly darker near road edge
-                            finalColor.lerp(darkGrassColor, (1 - blend) * 0.3);
-                        } else if (distToRoad < halfWidth + 6) {
-                            // Extended transition zone (4m more) - gradual height blend
-                            const blend = (distToRoad - halfWidth - 2) / 4;
-                            const val = blend * blend * (3 - 2 * blend);
-                            // Gentle height blending
-                            h = MathUtils.lerp(roadH, h, val * 0.5 + 0.5);
+                            h = roadH - 0.08; // Slightly below road
+                            // Dark dirt color (won't be visible under road)
+                            finalColor.copy(roadEdgeDirtColor).multiplyScalar(0.6);
+                        }
+                        // Immediate gravel shoulder (3m wide)
+                        else if (distToRoad < halfWidth + 3) {
+                            const blend = (distToRoad - halfWidth) / 3;
+                            const smoothBlend = blend * blend * (3 - 2 * blend); // smoothstep
+
+                            // Height: Very close to road level
+                            h = MathUtils.lerp(roadH - 0.05, roadH + 0.1, smoothBlend);
+
+                            // Color: Gravel/dirt shoulder
+                            finalColor.lerp(gravelColor, 1 - smoothBlend * 0.5);
+                            finalColor.lerp(dirtColor, smoothBlend * 0.3);
+                        }
+                        // Dirt/grass transition zone (8m wide)  
+                        else if (distToRoad < halfWidth + 11) {
+                            const blend = (distToRoad - halfWidth - 3) / 8;
+                            const smoothBlend = blend * blend * (3 - 2 * blend);
+
+                            // Height: Gradual slope from road level to natural terrain
+                            h = MathUtils.lerp(roadH + 0.1, h, smoothBlend * 0.7 + 0.3);
+
+                            // Color: Transition from dirt to grass
+                            const dirtAmount = 1 - smoothBlend;
+                            finalColor.lerp(dirtColor, dirtAmount * 0.5);
+                        }
+                        // Extended grass transition (14m more)
+                        else if (distToRoad < halfWidth + shoulderWidth) {
+                            const blend = (distToRoad - halfWidth - 11) / 14;
+                            const smoothBlend = blend * blend * (3 - 2 * blend);
+
+                            // Height: Very gentle blend to natural terrain
+                            h = MathUtils.lerp(roadH * 0.3 + h * 0.7, h, smoothBlend);
+
+                            // Color: Subtle dirt tint near road fades out
+                            finalColor.lerp(darkGrassColor, (1 - smoothBlend) * 0.2);
                         }
                     }
                 }
 
-                // Set Z
+                // Set Z (height) - geometry is rotated so Z is up
                 pos.setZ(i, h);
 
                 // Set Color
@@ -149,7 +206,7 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                 <planeGeometry args={[CHUNK_SIZE, CHUNK_SIZE, resolution - 1, resolution - 1]} />
                 <meshStandardMaterial
                     vertexColors={true}
-                    roughness={1.0}
+                    roughness={0.95}
                     side={DoubleSide}
                     wireframe={false}
                 />

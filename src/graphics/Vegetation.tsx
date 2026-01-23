@@ -1,5 +1,5 @@
 import { useRef, useLayoutEffect } from 'react';
-import { InstancedMesh, Object3D } from 'three';
+import { InstancedMesh, Object3D, Vector3 } from 'three';
 import { NoiseGenerator } from '../terrain/NoiseGenerator';
 import { RoadMask } from '../utils/RoadMask';
 import {
@@ -7,7 +7,12 @@ import {
     birchFoliageGeometry,
     birchBarkMaterial,
     goldenFoliageMaterial,
-    orangeFoliageMaterial
+    orangeFoliageMaterial,
+    redFoliageMaterial,
+    pineTrunkGeometry,
+    pineFoliageGeometry,
+    pineBarkMaterial,
+    pineNeedleMaterial,
 } from './TreeModels';
 
 interface VegetationProps {
@@ -17,29 +22,43 @@ interface VegetationProps {
     roadMask?: RoadMask;
 }
 
-export function Vegetation({ chunkPosition, noise, count = 200, roadMask }: VegetationProps) {
-    // Refs for three layers: Trunks, Golden Foliage, Orange Foliage
-    const trunkRef = useRef<InstancedMesh>(null);
-    const goldRef = useRef<InstancedMesh>(null);
-    const orangeRef = useRef<InstancedMesh>(null);
+export function Vegetation({ chunkPosition, noise, count = 150, roadMask }: VegetationProps) {
+    // Deciduous tree refs (birch/aspen with autumn colors)
+    const deciduousTrunkRef = useRef<InstancedMesh>(null);
+    const goldFoliageRef = useRef<InstancedMesh>(null);
+    const orangeFoliageRef = useRef<InstancedMesh>(null);
+    const redFoliageRef = useRef<InstancedMesh>(null);
+
+    // Pine tree refs
+    const pineTrunkRef = useRef<InstancedMesh>(null);
+    const pineFoliageRef = useRef<InstancedMesh>(null);
 
     useLayoutEffect(() => {
-        if (!trunkRef.current || !goldRef.current || !orangeRef.current) return;
+        if (!deciduousTrunkRef.current || !goldFoliageRef.current ||
+            !orangeFoliageRef.current || !redFoliageRef.current ||
+            !pineTrunkRef.current || !pineFoliageRef.current) return;
         if (!noise) return;
 
         const tempObj = new Object3D();
         const [chunkX, , chunkZ] = chunkPosition;
 
-        // Counters for each mesh
-        let trunkIdx = 0;
+        // Counters for each mesh type
+        let deciduousTrunkIdx = 0;
         let goldIdx = 0;
         let orangeIdx = 0;
+        let redIdx = 0;
+        let pineTrunkIdx = 0;
+        let pineIdx = 0;
+
+        // Tree placement parameters
+        const treeSpacing = 8; // Minimum spacing between trees
+        const placedTrees: Vector3[] = [];
 
         try {
             for (let i = 0; i < count; i++) {
-                // Random position in chunk (60x60 effective area)
-                const x = (Math.random() - 0.5) * 60;
-                const z = (Math.random() - 0.5) * 60;
+                // Random position in chunk (use 90% of chunk to avoid edge issues)
+                const x = (Math.random() - 0.5) * 180;
+                const z = (Math.random() - 0.5) * 180;
 
                 const worldX = chunkX + x;
                 const worldZ = chunkZ + z;
@@ -47,44 +66,101 @@ export function Vegetation({ chunkPosition, noise, count = 200, roadMask }: Vege
                 // Road Avoidance - check efficient RoadMask
                 if (roadMask) {
                     const distToRoad = roadMask.getDistanceToRoad(worldX, worldZ);
-                    if (distToRoad < 12) continue; // Keep 12m clearance from road center for clean roadside
+                    if (distToRoad < 15) continue; // 15m clearance from road center
                 }
 
-                const y = noise.getHeight(worldX, worldZ);
+                // Check spacing from other trees (simple clustering prevention)
+                let tooClose = false;
+                for (const placed of placedTrees) {
+                    const dx = worldX - placed.x;
+                    const dz = worldZ - placed.z;
+                    if (dx * dx + dz * dz < treeSpacing * treeSpacing) {
+                        tooClose = true;
+                        break;
+                    }
+                }
+                if (tooClose && Math.random() > 0.3) continue; // Allow some clustering
 
-                // Positioning
-                const scale = 0.8 + Math.random() * 0.4;
+                // Get EXACT terrain height at this position
+                // Trees should be grounded - base at terrain level
+                const groundHeight = noise.getHeight(worldX, worldZ);
+
+                // Scale variation for natural look
+                const scale = 0.7 + Math.random() * 0.6; // 0.7 to 1.3
                 const rotation = Math.random() * Math.PI * 2;
 
-                // 1. Trunk
-                tempObj.position.set(x, y + 1.5 * scale, z);
-                tempObj.scale.set(scale, scale, scale);
-                tempObj.rotation.set(0, rotation, 0);
-                tempObj.updateMatrix();
-                if (trunkIdx < count) trunkRef.current.setMatrixAt(trunkIdx++, tempObj.matrix);
+                // Decide tree type based on noise (creates natural forest zones)
+                const zoneNoise = noise.getNoise(worldX * 0.01, worldZ * 0.01, 0.5);
+                const isPine = zoneNoise > 0.6; // ~40% chance of pine in pine zones
 
-                // 2. Foliage (Offset up)
-                tempObj.position.set(x, y + 4.5 * scale, z);
-                tempObj.scale.set(scale, scale, scale);
-                tempObj.rotation.set(0, rotation, 0);
-                tempObj.updateMatrix();
+                if (isPine) {
+                    // === PINE TREE ===
+                    // Trunk - base at ground level
+                    tempObj.position.set(x, groundHeight, z);
+                    tempObj.scale.set(scale, scale, scale);
+                    tempObj.rotation.set(0, rotation, 0);
+                    tempObj.updateMatrix();
+                    if (pineTrunkIdx < count) {
+                        pineTrunkRef.current.setMatrixAt(pineTrunkIdx++, tempObj.matrix);
+                    }
 
-                // Randomly assign to Gold or Orange
-                if (Math.random() > 0.5) {
-                    if (goldIdx < count) goldRef.current.setMatrixAt(goldIdx++, tempObj.matrix);
+                    // Foliage - same position (geometry already positioned relative to trunk)
+                    tempObj.position.set(x, groundHeight, z);
+                    tempObj.scale.set(scale, scale, scale);
+                    tempObj.rotation.set(0, rotation, 0);
+                    tempObj.updateMatrix();
+                    if (pineIdx < count) {
+                        pineFoliageRef.current.setMatrixAt(pineIdx++, tempObj.matrix);
+                    }
                 } else {
-                    if (orangeIdx < count) orangeRef.current.setMatrixAt(orangeIdx++, tempObj.matrix);
+                    // === DECIDUOUS TREE (Birch/Aspen) ===
+                    // Trunk - base at ground level (geometry has base at y=0)
+                    tempObj.position.set(x, groundHeight, z);
+                    tempObj.scale.set(scale, scale, scale);
+                    tempObj.rotation.set(0, rotation, 0);
+                    tempObj.updateMatrix();
+                    if (deciduousTrunkIdx < count) {
+                        deciduousTrunkRef.current.setMatrixAt(deciduousTrunkIdx++, tempObj.matrix);
+                    }
+
+                    // Foliage - same base position (geometry has foliage elevated)
+                    tempObj.position.set(x, groundHeight, z);
+                    tempObj.scale.set(scale, scale, scale);
+                    tempObj.rotation.set(0, rotation, 0);
+                    tempObj.updateMatrix();
+
+                    // Randomly assign foliage color for autumn variety
+                    const colorRoll = Math.random();
+                    if (colorRoll < 0.45) {
+                        if (goldIdx < count) goldFoliageRef.current.setMatrixAt(goldIdx++, tempObj.matrix);
+                    } else if (colorRoll < 0.8) {
+                        if (orangeIdx < count) orangeFoliageRef.current.setMatrixAt(orangeIdx++, tempObj.matrix);
+                    } else {
+                        if (redIdx < count) redFoliageRef.current.setMatrixAt(redIdx++, tempObj.matrix);
+                    }
                 }
+
+                placedTrees.push(new Vector3(worldX, groundHeight, worldZ));
             }
 
-            // Update counts and flags
-            trunkRef.current.count = trunkIdx;
-            goldRef.current.count = goldIdx;
-            orangeRef.current.count = orangeIdx;
+            // Update counts and flags for deciduous trees
+            deciduousTrunkRef.current.count = deciduousTrunkIdx;
+            goldFoliageRef.current.count = goldIdx;
+            orangeFoliageRef.current.count = orangeIdx;
+            redFoliageRef.current.count = redIdx;
 
-            if (trunkRef.current.instanceMatrix) trunkRef.current.instanceMatrix.needsUpdate = true;
-            if (goldRef.current.instanceMatrix) goldRef.current.instanceMatrix.needsUpdate = true;
-            if (orangeRef.current.instanceMatrix) orangeRef.current.instanceMatrix.needsUpdate = true;
+            // Update counts for pine trees
+            pineTrunkRef.current.count = pineTrunkIdx;
+            pineFoliageRef.current.count = pineIdx;
+
+            // Mark matrices as needing update
+            if (deciduousTrunkRef.current.instanceMatrix) deciduousTrunkRef.current.instanceMatrix.needsUpdate = true;
+            if (goldFoliageRef.current.instanceMatrix) goldFoliageRef.current.instanceMatrix.needsUpdate = true;
+            if (orangeFoliageRef.current.instanceMatrix) orangeFoliageRef.current.instanceMatrix.needsUpdate = true;
+            if (redFoliageRef.current.instanceMatrix) redFoliageRef.current.instanceMatrix.needsUpdate = true;
+            if (pineTrunkRef.current.instanceMatrix) pineTrunkRef.current.instanceMatrix.needsUpdate = true;
+            if (pineFoliageRef.current.instanceMatrix) pineFoliageRef.current.instanceMatrix.needsUpdate = true;
+
         } catch (e) {
             console.warn("Error generating vegetation:", e);
         }
@@ -93,28 +169,53 @@ export function Vegetation({ chunkPosition, noise, count = 200, roadMask }: Vege
 
     return (
         <group position={chunkPosition}>
-            {/* Trunks */}
+            {/* Deciduous Trees - Trunks */}
             <instancedMesh
-                ref={trunkRef}
+                ref={deciduousTrunkRef}
                 args={[birchTrunkGeometry, birchBarkMaterial, count]}
                 castShadow
                 receiveShadow
             />
-            {/* Golden Foliage */}
+
+            {/* Deciduous Trees - Golden Foliage */}
             <instancedMesh
-                ref={goldRef}
+                ref={goldFoliageRef}
                 args={[birchFoliageGeometry, goldenFoliageMaterial, count]}
                 castShadow
                 receiveShadow
             />
-            {/* Orange Foliage */}
+
+            {/* Deciduous Trees - Orange Foliage */}
             <instancedMesh
-                ref={orangeRef}
+                ref={orangeFoliageRef}
                 args={[birchFoliageGeometry, orangeFoliageMaterial, count]}
+                castShadow
+                receiveShadow
+            />
+
+            {/* Deciduous Trees - Red Foliage */}
+            <instancedMesh
+                ref={redFoliageRef}
+                args={[birchFoliageGeometry, redFoliageMaterial, count]}
+                castShadow
+                receiveShadow
+            />
+
+            {/* Pine Trees - Trunks */}
+            <instancedMesh
+                ref={pineTrunkRef}
+                args={[pineTrunkGeometry, pineBarkMaterial, count]}
+                castShadow
+                receiveShadow
+            />
+
+            {/* Pine Trees - Foliage */}
+            <instancedMesh
+                ref={pineFoliageRef}
+                args={[pineFoliageGeometry, pineNeedleMaterial, count]}
                 castShadow
                 receiveShadow
             />
         </group>
     );
 }
-

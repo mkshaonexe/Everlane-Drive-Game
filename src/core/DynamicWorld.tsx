@@ -76,6 +76,7 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
                         <Vegetation
                             chunkPosition={[pos.x, pos.y, pos.z] as [number, number, number]}
                             noise={noise}
+                            roadPath={roadPath}
                         />
                     </group>
                 ))}

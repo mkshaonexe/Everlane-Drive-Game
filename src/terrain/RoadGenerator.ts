@@ -85,19 +85,20 @@ export class RoadGenerator {
         // Sample terrain height
         const height = this.noise.getHeight(nextPos.x, nextPos.z);
 
-        // Slope limiting - don't allow road to change elevation too quickly
+        // Slope limiting - allow steeper slopes for hill following
         const prevY = currentPos.y;
         const heightDiff = height - prevY;
-        const maxSlopePerSegment = 2.0; // Max 2m rise per 20m run (~10% grade)
+        const maxSlopePerSegment = 3.0; // Max 3m rise per 20m run (~15% grade)
 
         if (heightDiff > maxSlopePerSegment) {
             nextPos.y = prevY + maxSlopePerSegment;
         } else if (heightDiff < -maxSlopePerSegment) {
             nextPos.y = prevY - maxSlopePerSegment;
         } else {
-            nextPos.y = height + 0.5;
-            // Smooth with previous point
-            nextPos.y = (nextPos.y + prevY) * 0.5;
+            // Follow terrain more closely, with small offset
+            nextPos.y = height + 0.2;
+            // Smoother lerp towards target
+            nextPos.y = prevY * 0.3 + nextPos.y * 0.7;
         }
 
         return {

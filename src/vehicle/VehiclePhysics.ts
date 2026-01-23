@@ -58,9 +58,9 @@ export class VehiclePhysics {
 
         if (this.onGround) {
             if (!this.isOnRoad) {
-                // Off-road penalty
-                currentFriction *= 0.9;
-                speedMultiplier = 0.5; // Max 50% speed off-road
+                // Off-road penalty (reduced for better grass/soil driving)
+                currentFriction *= 0.95; // Slightly less friction
+                speedMultiplier = 0.85; // Max 85% speed off-road (was 50%)
             }
         }
 
@@ -115,11 +115,11 @@ export class VehiclePhysics {
 
             // EMERGENCY GROUND SNAP: If we are significantly below the detected ground, snap up immediately
             // This prevents "getting stuck inside the ground"
-            if (this.position.y < this.groundHeight - 0.5) {
+            if (this.position.y < this.groundHeight - 0.2) {
                 this.position.y = targetY;
                 this.velocity.y = 0;
             } else {
-                this.position.y += (targetY - this.position.y) * 15 * delta;
+                this.position.y += (targetY - this.position.y) * 20 * delta; // Faster snap
             }
         }
 

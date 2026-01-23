@@ -55,14 +55,20 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
         const update = chunkManager.update(vehiclePos);
 
         if (update.chunksToLoad.length > 0 || update.chunksToUnload.length > 0) {
-            // For now, just update with new chunks to load
-            // In production, we'd properly unload old chunks from the scene
             setLoadedChunks(prev => {
-                const chunkIds = new Set(prev.map(c => `${c.x}_${c.z}`));
+                // Create a set of IDs to unload for fast lookup
+                const unloadIds = new Set(update.chunksToUnload);
+
+                // Filter out chunks that need to be unloaded
+                const keptChunks = prev.filter(c => !unloadIds.has(`${c.x}_${c.z}`));
+
+                // Filter new chunks to ensure no duplicates (sanity check)
+                const currentIds = new Set(keptChunks.map(c => `${c.x}_${c.z}`));
                 const newChunks = update.chunksToLoad.filter(
-                    c => !chunkIds.has(`${c.x}_${c.z}`)
+                    c => !currentIds.has(`${c.x}_${c.z}`)
                 );
-                return [...prev, ...newChunks];
+
+                return [...keptChunks, ...newChunks];
             });
         }
     });

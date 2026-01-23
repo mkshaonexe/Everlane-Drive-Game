@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { Group, Object3D, Vector3, Quaternion, Matrix4 } from 'three';
+import { Group, Object3D, Vector3, Quaternion, Matrix4, CanvasTexture } from 'three';
 import { VehicleModel } from './VehicleModel';
 import { VehiclePhysics } from './VehiclePhysics';
 import { VehicleController } from './VehicleController';
@@ -129,8 +129,36 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         cameraController.update(physics.position, physics.rotation, dt, cameraDistance);
     });
 
+    // Generate Shadow Texture
+    const shadowTexture = useMemo(() => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 128;
+        canvas.height = 128;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+            const gradient = ctx.createRadialGradient(64, 64, 0, 64, 64, 60);
+            gradient.addColorStop(0, 'rgba(0, 0, 0, 0.6)');
+            gradient.addColorStop(0.4, 'rgba(0, 0, 0, 0.4)');
+            gradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 128, 128);
+        }
+        const tex = new CanvasTexture(canvas);
+        return tex;
+    }, []);
+
     return (
         <group ref={groupRef}>
+            {/* Shadow Blob */}
+            <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.05, 0]}>
+                <planeGeometry args={[2.4, 4.8]} />
+                <meshBasicMaterial
+                    map={shadowTexture}
+                    transparent={true}
+                    depthWrite={false}
+                    opacity={0.8}
+                />
+            </mesh>
             <VehicleModel />
             <AmbientAudio speedRef={speedRef} />
         </group>

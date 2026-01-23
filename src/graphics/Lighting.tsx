@@ -1,66 +1,50 @@
-import { useRef, useState } from 'react';
-import { useFrame } from '@react-three/fiber';
+import { useRef } from 'react';
 import { DirectionalLight } from 'three';
 
-interface LightingProps {
-    dayCycleDuration?: number; // Duration of a full day in seconds
-}
-
-export function Lighting({ dayCycleDuration = 600 }: LightingProps) {
+export function Lighting() {
     const sunRef = useRef<DirectionalLight>(null);
-    const [time, setTime] = useState(0);
 
-    useFrame((_, delta) => {
-        // Update time
-        const newTime = (time + delta) % dayCycleDuration;
-        setTime(newTime);
-
-        if (sunRef.current) {
-            // Calculate sun position based on time
-            // 0 = sunrise, 0.25 = noon, 0.5 = sunset, 0.75 = midnight
-            const progress = newTime / dayCycleDuration;
-            const angle = progress * Math.PI * 2 - Math.PI / 2; // Start at -PI/2 (sunriseish)
-
-            // Orbit around Z axis (East-West)
-            const radius = 100;
-            sunRef.current.position.set(
-                Math.cos(angle) * radius,
-                Math.sin(angle) * radius,
-                50 // Offset in Z to have some angle
-            );
-
-            // Change color/intensity based on height
-            // Simple logic:
-            // High: White, High Intensity
-            // Low: Orange/Red, Low Intensity
-            // Negative: Off/Moon logic (simplified to keeping sun dim)
-
-            const heigth = Math.sin(angle);
-            if (heigth > 0) {
-                // Day
-                sunRef.current.intensity = 1.5;
-                sunRef.current.color.setHSL(0.1, 0.1, 0.5 + heigth * 0.5); // Whitens as it goes up
-            } else {
-                // Night
-                sunRef.current.intensity = 0.1;
-                sunRef.current.color.setHex(0x111122); // Blueish moon
-            }
-        }
-    });
+    // Golden hour lighting - static warm afternoon sun
+    // Positioned for late afternoon golden hour aesthetic
+    const sunPosition: [number, number, number] = [80, 60, 40]; // Low angle from west
 
     return (
         <>
-            <ambientLight intensity={0.4} />
+            {/* Ambient light - warm autumn tone */}
+            <ambientLight
+                color="#ffeedd"
+                intensity={0.5}
+            />
+
+            {/* Hemisphere light for sky/ground color gradient */}
+            <hemisphereLight
+                color="#ffd4a3" // Warm sky color (golden hour)
+                groundColor="#8b7355" // Warm brown earth
+                intensity={0.4}
+            />
+
+            {/* Directional sun light - golden hour */}
             <directionalLight
                 ref={sunRef}
+                position={sunPosition}
+                color="#ffb347" // Warm orange-peach sunlight
+                intensity={1.8} // Brighter for autumn clarity
                 castShadow
                 shadow-mapSize={[2048, 2048]}
-                shadow-camera-left={-100}
-                shadow-camera-right={100}
-                shadow-camera-top={100}
-                shadow-camera-bottom={-100}
+                shadow-camera-left={-150}
+                shadow-camera-right={150}
+                shadow-camera-top={150}
+                shadow-camera-bottom={-150}
+                shadow-camera-far={400}
+                shadow-bias={-0.0001}
             />
-            {/* Skybox could go here or separate component */}
+
+            {/* Subtle fill light from opposite direction (bounce light simulation) */}
+            <directionalLight
+                position={[-40, 30, -30]}
+                color="#acc5e6" // Cool blue-ish bounce from sky
+                intensity={0.3}
+            />
         </>
     );
 }

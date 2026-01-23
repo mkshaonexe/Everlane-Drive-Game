@@ -56,7 +56,7 @@ export function VehicleModel() {
     const wheelWidth = 0.25;
 
     return (
-        <group ref={groupRef} rotation-y={-Math.PI / 2}>
+        <group ref={groupRef} rotation-y={Math.PI / 2}>
             {/* Main Body */}
             <mesh position={[0, 0.7, 0]} castShadow receiveShadow geometry={bodyGeometry}>
                 <meshStandardMaterial

@@ -1,6 +1,7 @@
 import { Scene } from './Scene'
 import { HUD } from './ui/HUD'
 import { MenuOverlay } from './ui/MenuOverlay'
+import { VehicleSelect } from './ui/VehicleSelect'
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
 
       {/* UI Layer */}
       <HUD />
+      <VehicleSelect />
       <MenuOverlay />
     </>
   )

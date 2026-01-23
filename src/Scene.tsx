@@ -11,6 +11,7 @@ import { Vegetation } from './graphics/Vegetation';
 import { useMemo, useRef } from 'react';
 import { Vector3, Group } from 'three';
 import { CHUNK_SIZE } from './utils/constants';
+import { PostProcessing } from './graphics/PostProcessing';
 
 export function Scene() {
     const noise = useMemo(() => new NoiseGenerator(), []);
@@ -35,6 +36,7 @@ export function Scene() {
                 {/* Graphics Systems */}
                 <Lighting />
                 <Weather />
+                <PostProcessing />
                 {/* <Environment preset="sunset" />  -- Replaced by our dynamic sky/lighting */}
 
                 {/* Collidable Group (Terrain + Road) */}

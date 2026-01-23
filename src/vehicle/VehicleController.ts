@@ -93,6 +93,11 @@ export class VehicleController {
                 store.setFreeLookActive(true);
             }
         }
+        // Middle mouse button (button 1) - reset camera angle
+        if (event.button === 1) {
+            const store = useGameStore.getState();
+            store.resetFreeLookAngles();
+        }
     };
 
     private onMouseUp = (event: MouseEvent) => {
@@ -101,7 +106,8 @@ export class VehicleController {
             // Only deactivate if it was a right-click hold (not button toggle)
             if (!store.isFreeLookButtonActive) {
                 store.setFreeLookActive(false);
-                store.resetFreeLookAngles();
+                // DON'T reset angles - camera stays at the rotated position
+                // User can middle-click to reset camera angle
             }
         }
     };
@@ -117,17 +123,18 @@ export class VehicleController {
         }
     };
 
-    private onContextMenu = (_event: MouseEvent) => {
-        // Allow right-click context menu for debugging purposes
-        // (Previously blocked with event.preventDefault())
+    private onContextMenu = (event: MouseEvent) => {
+        // Prevent context menu when right-clicking for camera rotation
+        event.preventDefault();
     };
 
     private onWheel = (event: WheelEvent) => {
         const store = useGameStore.getState();
-        // Prevent zoom when free look is active
-        if (store.isFreeLookActive) {
-            event.preventDefault();
-        }
+        // Use scroll to zoom in/out
+        // deltaY > 0 means scrolling down (zoom out), deltaY < 0 means scrolling up (zoom in)
+        const zoomDelta = event.deltaY * 0.005; // Sensitivity factor
+        store.updateCameraZoom(zoomDelta);
+        event.preventDefault();
     };
 
     private addEventListeners() {

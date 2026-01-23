@@ -62,7 +62,7 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         speedRef.current = speed;
 
         // Update UI Store (throttled slightly if needed, but per frame is fine for simple store)
-        const { setSpeed, addDistance, setPosition, isFreeLookActive, freeLookYaw, freeLookPitch, roadPath } = useGameStore.getState();
+        const { setSpeed, addDistance, setPosition, isFreeLookActive, freeLookYaw, freeLookPitch, roadPath, cameraDistance } = useGameStore.getState();
         setSpeed(speed);
         addDistance(speed * dt); // Distance = Speed * Time
         setPosition(physics.position.clone()); // Clone to avoid reference issues
@@ -126,7 +126,7 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
 
         // 4. Update Camera with free look state
         cameraController.setFreeLook(isFreeLookActive, freeLookYaw, freeLookPitch);
-        cameraController.update(physics.position, physics.rotation, dt);
+        cameraController.update(physics.position, physics.rotation, dt, cameraDistance);
     });
 
     return (

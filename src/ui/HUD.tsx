@@ -34,6 +34,9 @@ export function HUD() {
                     <div className="text-xs text-white/80 uppercase tracking-wider">
                         WASD to Drive • SPACE to Brake
                     </div>
+                    <div className="text-xs text-white/60 uppercase tracking-wider">
+                        Right-Click + Drag: Rotate Camera • Scroll: Zoom • Middle-Click: Reset Camera
+                    </div>
                 </div>
 
                 {/* Distance / Odometer */}

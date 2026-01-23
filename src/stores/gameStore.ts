@@ -13,6 +13,9 @@ interface GameState {
     freeLookYaw: number;
     freeLookPitch: number;
 
+    // Camera Zoom State
+    cameraDistance: number;
+
     setSpeed: (speed: number) => void;
     addDistance: (delta: number) => void;
     setIsPaused: (isPaused: boolean) => void;
@@ -24,6 +27,10 @@ interface GameState {
     toggleFreeLookButton: () => void;
     updateFreeLookAngles: (deltaYaw: number, deltaPitch: number) => void;
     resetFreeLookAngles: () => void;
+
+    // Camera Zoom Actions
+    updateCameraZoom: (delta: number) => void;
+
     // Road Data (for MiniMap & Respawn)
     roadPath: Vector3[];
     setRoadPath: (path: Vector3[]) => void;
@@ -40,6 +47,9 @@ export const useGameStore = create<GameState>((set) => ({
     isFreeLookButtonActive: false,
     freeLookYaw: 0,
     freeLookPitch: 0,
+
+    // Camera Zoom Initial State (default distance from vehicle)
+    cameraDistance: 8,
 
     // Road Data Initial State
     roadPath: [],
@@ -65,6 +75,12 @@ export const useGameStore = create<GameState>((set) => ({
         freeLookPitch: Math.max(-Math.PI / 3, Math.min(Math.PI / 3, state.freeLookPitch + deltaPitch)),
     })),
     resetFreeLookAngles: () => set({ freeLookYaw: 0, freeLookPitch: 0 }),
+
+    // Camera Zoom Actions
+    updateCameraZoom: (delta) => set((state) => ({
+        // Clamp zoom distance between 3 and 20 units
+        cameraDistance: Math.max(3, Math.min(20, state.cameraDistance + delta)),
+    })),
 
     // Road Data Actions
     setRoadPath: (path) => set({ roadPath: path }),

@@ -88,17 +88,17 @@ export class RoadGenerator {
         // Slope limiting - allow steeper slopes for hill following
         const prevY = currentPos.y;
         const heightDiff = height - prevY;
-        const maxSlopePerSegment = 3.0; // Max 3m rise per 20m run (~15% grade)
+        const maxSlopePerSegment = 5.0; // Max 5m rise per 20m run (25% grade) - steeper to follow terrain
 
         if (heightDiff > maxSlopePerSegment) {
             nextPos.y = prevY + maxSlopePerSegment;
         } else if (heightDiff < -maxSlopePerSegment) {
             nextPos.y = prevY - maxSlopePerSegment;
         } else {
-            // Follow terrain more closely, with small offset
-            nextPos.y = height + 0.2;
-            // Smoother lerp towards target
-            nextPos.y = prevY * 0.3 + nextPos.y * 0.7;
+            // Follow terrain closely
+            nextPos.y = height + 0.5; // Slightly higher to sit on top
+            // Strong lerp towards target to avoid sinking
+            nextPos.y = prevY * 0.2 + nextPos.y * 0.8;
         }
 
         return {

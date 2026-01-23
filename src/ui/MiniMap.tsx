@@ -1,123 +1,222 @@
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import { useGameStore } from '../stores/gameStore';
 
 export function MiniMap() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const position = useGameStore(state => state.position);
     const roadPath = useGameStore(state => state.roadPath);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [hovered, setHovered] = useState(false);
 
-    // We need vehicle rotation for Track Up. 
-    // Let's update Vehicle.tsx to set rotation in store, OR just use North Up.
-    // User asked for "show the road nearest road and the car its my slef current location".
-    // North Up is acceptable for a simple mini-map.
-
+    // Repaint function/effect
     useEffect(() => {
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
+        // Determine dimensions
+        const width = isExpanded ? window.innerWidth : 200;
+        const height = isExpanded ? window.innerHeight : 200;
+
+        // Update canvas size if needed (avoid clearing if size matches)
+        if (canvas.width !== width || canvas.height !== height) {
+            canvas.width = width;
+            canvas.height = height;
+        }
+
         // Clear canvas
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.clearRect(0, 0, width, height);
 
         // Map settings
-        const mapSize = 200; // px
-        const viewRange = 300; // meters visible
-        const scale = mapSize / viewRange; // pixels per center
-        const centerX = mapSize / 2;
-        const centerY = mapSize / 2;
+        let scale: number;
+        let centerX: number;
+        let centerY: number;
+        let offsetX = 0;
+        let offsetZ = 0;
 
-        // Background
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, mapSize / 2, 0, Math.PI * 2);
-        ctx.fill();
+        if (isExpanded) {
+            // Full Map Mode: Fit "all the things" (the whole road)
+            // Calculate bounds
+            let minX = Infinity, maxX = -Infinity, minZ = Infinity, maxZ = -Infinity;
 
-        // Save context for clipping
+            if (roadPath && roadPath.length > 0) {
+                for (const p of roadPath) {
+                    if (p.x < minX) minX = p.x;
+                    if (p.x > maxX) maxX = p.x;
+                    if (p.z < minZ) minZ = p.z;
+                    if (p.z > maxZ) maxZ = p.z;
+                }
+            } else {
+                // Default bounds around player if no road
+                minX = position.x - 500; maxX = position.x + 500;
+                minZ = position.z - 500; maxZ = position.z + 500;
+            }
+
+            // Add padding
+            const padding = 100;
+            minX -= padding; maxX += padding;
+            minZ -= padding; maxZ += padding;
+
+            const roadW = maxX - minX;
+            const roadH = maxZ - minZ;
+
+            // Scale to fit screen
+            const scaleX = width / roadW;
+            const scaleY = height / roadH;
+            scale = Math.min(scaleX, scaleY) * 0.9; // 0.9 for margin
+
+            // Center of the map
+            const mapCx = (minX + maxX) / 2;
+            const mapCz = (minZ + maxZ) / 2;
+
+            centerX = width / 2;
+            centerY = height / 2;
+
+            // Offset to move world origin to center relative to map center
+            offsetX = -mapCx;
+            offsetZ = -mapCz;
+
+            // Background
+            ctx.fillStyle = 'rgba(20, 20, 25, 0.95)';
+            ctx.fillRect(0, 0, width, height);
+
+        } else {
+            // Mini Map Mode
+            const viewRange = 300; // meters visible
+            scale = width / viewRange;
+            centerX = width / 2;
+            centerY = height / 2;
+
+            // Offset is relative to player
+            offsetX = -position.x;
+            offsetZ = -position.z;
+
+            // Background Circle
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, width / 2, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Clip to circle
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, width / 2, 0, Math.PI * 2);
+            ctx.clip();
+        }
+
+        // --- Draw Map Content ---
+
         ctx.save();
-        ctx.beginPath();
-        ctx.arc(centerX, centerY, mapSize / 2, 0, Math.PI * 2);
-        ctx.clip();
+        // Move to center of screen
+        ctx.translate(centerX, centerY);
+
+        // In MiniMap mode, we rotated so up is forward? No, we just did north up.
+        // Let's stick to North Up for consistency.
+        // World coordinates: X right, Z down (on screen) -> usually Z is forward. 
+        // If map is North Up, usually -Z is Up.
+        // Screen Y is Down.
+        // So World Z should map to Screen Y?
+        // If World +Z is "South", and Screen +Y is "Down". Then +Z -> +Y.
+
+        ctx.scale(scale, scale); // 1 unit = 1 pixel * scale
+        ctx.translate(offsetX, offsetZ);
+
+        // Grid lines (Full map only)
+        if (isExpanded) {
+            ctx.strokeStyle = '#333333';
+            ctx.lineWidth = 2 / scale;
+            // Draw grid logic if needed... skipping for cleanliness
+        }
 
         // Draw Road
         if (roadPath && roadPath.length > 0) {
-            ctx.strokeStyle = '#AAAAAA';
-            ctx.lineWidth = 15 * scale; // Road width approx 12m
+            ctx.strokeStyle = isExpanded ? '#FFFFFF' : '#AAAAAA';
+            ctx.lineWidth = 15; // Real world meters width
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
 
             ctx.beginPath();
-
-            // Optimization: only draw points within range
             let first = true;
-
-            for (let i = 0; i < roadPath.length; i++) {
+            for (let i = 0; i < roadPath.length; i += 2) { // Skip every other point for perf
                 const p = roadPath[i];
-                // Convert world pos (x, z) to map pos relative to vehicle
-                // Vehicle is at center (centerX, centerY)
-                // World coordinates: X is right, Z is forward/back?
-                // In Three.js: X is Right, Y is Up, Z is Forward/Backward (usually +Z is towards camera/back)
-
-                // Map coordinates: x right, y down.
-                // If North Up (World -Z is Up on map? or +Z up?)
-                // Let's say Map Up is World -Z.
-
-                const dx = p.x - position.x;
-                const dz = p.z - position.z;
-
-                // Check if roughly in range (with buffer)
-                if (Math.abs(dx) > viewRange && Math.abs(dz) > viewRange) continue;
-
-                const mapX = centerX + dx * scale;
-                const mapY = centerY + dz * scale; // World +Z is down on screen (standard map)
-
                 if (first) {
-                    ctx.moveTo(mapX, mapY);
+                    ctx.moveTo(p.x, p.z);
                     first = false;
                 } else {
-                    ctx.lineTo(mapX, mapY);
+                    ctx.lineTo(p.x, p.z);
                 }
+            }
+            if (roadPath.length > 1) { // Ensure last point
+                const last = roadPath[roadPath.length - 1];
+                ctx.lineTo(last.x, last.z);
             }
             ctx.stroke();
 
-            // Draw center line
-            ctx.strokeStyle = '#FFFFFF';
-            ctx.lineWidth = 1 * scale;
-            ctx.setLineDash([10 * scale, 10 * scale]);
-            ctx.stroke();
-            ctx.setLineDash([]);
+            // Center line
+            ctx.strokeStyle = isExpanded ? '#444444' : '#FFFFFF';
+            ctx.lineWidth = 1;
+            if (!isExpanded) {
+                ctx.setLineDash([10, 10]);
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
         }
 
-        // Draw Player (Center)
-        ctx.translate(centerX, centerY);
-        // If we had rotation we would rotate the arrow here.
-        // Since North Up, we rotate the arrow by vehicle rotation?
-        // If map is North Up, vehicle arrow points in vehicle direction.
+        // Draw Player
+        ctx.translate(position.x, position.z);
 
+        // Draw player icon
         ctx.fillStyle = '#FF4444';
+
+        // Make player icon constant size on screen, regardless of zoom
+        // So we need to reverse scale for the icon drawing
+        const iconSize = isExpanded ? 10 / scale : 6 / scale;
+
         ctx.beginPath();
-        ctx.moveTo(0, -6);
-        ctx.lineTo(5, 5);
-        ctx.lineTo(0, 2);
-        ctx.lineTo(-5, 5);
-        ctx.closePath();
+        // Simple circle/triangle
+        ctx.arc(0, 0, iconSize, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.restore();
+        // Indicate Direction? We'd need rotation.
 
-    }, [position, roadPath]); // Update on position change
+        ctx.restore(); // Restore clip/transform
+
+        // Text Overlay for Full Map
+        if (isExpanded) {
+            ctx.fillStyle = 'white';
+            ctx.font = '20px sans-serif';
+            ctx.textAlign = 'left';
+            ctx.fillText("World Map", 40, 50);
+
+            ctx.font = '14px sans-serif';
+            ctx.fillStyle = '#ccc';
+            ctx.fillText(`${roadPath?.length || 0} Road Segments`, 40, 80);
+            ctx.fillText("Click anywhere to close", 40, 110);
+        }
+
+    }, [position, roadPath, isExpanded]);
 
     return (
-        <div className="absolute top-8 left-8 pointer-events-none select-none">
+        <div
+            className={`fixed transition-all duration-300 z-40 ${isExpanded ? 'inset-0 bg-black/80 flex items-center justify-center cursor-pointer' : 'top-8 left-8 w-[200px] h-[200px] cursor-pointer hover:scale-105'
+                }`}
+            onClick={() => setIsExpanded(!isExpanded)}
+            onMouseEnter={() => setHovered(true)}
+            onMouseLeave={() => setHovered(false)}
+            title={isExpanded ? "Click to close map" : "Click to view full map"}
+        >
             <canvas
                 ref={canvasRef}
-                width={200}
-                height={200}
-                className="rounded-full border-2 border-white/20 shadow-lg backdrop-blur-sm"
+                className={`transition-all duration-300 ${isExpanded ? 'rounded-lg shadow-2xl border border-white/10' : 'rounded-full border-2 border-white/20 shadow-lg backdrop-blur-sm'
+                    }`}
             />
-            <div className="absolute -bottom-6 w-full text-center text-xs font-bold text-white/70 uppercase tracking-widest">
-                Map
-            </div>
+            {/* MiniMap Label */}
+            {!isExpanded && (
+                <div className={`absolute -bottom-6 w-full text-center text-xs font-bold uppercase tracking-widest transition-colors ${hovered ? 'text-white' : 'text-white/70'}`}>
+                    {hovered ? "Open Map" : "Map"}
+                </div>
+            )}
         </div>
     );
 }

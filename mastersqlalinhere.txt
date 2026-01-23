@@ -1,0 +1,10 @@
+-- Master SQL Backup for Slow Roads Recreation (Supabase)
+-- This file contains the SQL schema and policies for the project.
+-- Use this to restore the database if it is deleted.
+
+-- [TODO: Add your actual SQL dumps here]
+-- Example:
+-- create table profiles (
+--   id uuid references auth.users not null,
+--   ...
+-- );

@@ -26,7 +26,7 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
             const rightPt = point.clone().add(right.clone().multiplyScalar(width / 2));
 
             // Vertices
-            positions.push(leftPt.x, leftPt.y + 0.05, leftPt.z); // Slightly above terrain
+            positions.push(leftPt.x, leftPt.y + 0.05, leftPt.z); // Slightly above terrain to avoid Z-fighting
             positions.push(rightPt.x, rightPt.y + 0.05, rightPt.z);
 
             // UVs (repeat along length)

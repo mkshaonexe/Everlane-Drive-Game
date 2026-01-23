@@ -61,6 +61,8 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution }: { noise: NoiseGen
                 if (!parent || !parent.geometry) return;
 
                 const pos = parent.geometry.attributes.position as any;
+                // Initialize userData if it doesn't exist (BufferAttribute doesn't have it by default)
+                if (!pos.userData) pos.userData = {};
                 if (pos.userData.generated) return;
 
                 for (let i = 0; i < pos.count; i++) {

@@ -1,4 +1,6 @@
+
 import { Canvas } from '@react-three/fiber'
+import { OrbitControls } from '@react-three/drei'
 import { Vehicle } from './vehicle/Vehicle'
 import { Engine } from './core/Engine';
 import { TerrainChunk } from './terrain/TerrainChunk';
@@ -11,7 +13,7 @@ import { Vegetation } from './graphics/Vegetation';
 import { useMemo, useRef } from 'react';
 import { Vector3, Group } from 'three';
 import { CHUNK_SIZE } from './utils/constants';
-import { PostProcessing } from './graphics/PostProcessing';
+// import { PostProcessing } from './graphics/PostProcessing';
 
 export function Scene() {
     const noise = useMemo(() => new NoiseGenerator(), []);
@@ -36,12 +38,10 @@ export function Scene() {
                 {/* Graphics Systems */}
                 <Lighting />
                 <Weather />
-                <PostProcessing />
-                {/* <Environment preset="sunset" />  -- Replaced by our dynamic sky/lighting */}
+                {/* <PostProcessing /> */}
 
                 {/* Collidable Group (Terrain + Road) */}
                 <group ref={terrainGroupRef}>
-                    {/* Terrain Chunks (3x3 grid around center) */}
                     <group>
                         {[
                             [0, 0, 0],
@@ -52,20 +52,20 @@ export function Scene() {
                         ].map((pos, i) => (
                             <group key={i}>
                                 <TerrainChunk position={pos as [number, number, number]} noise={noise} />
-                                <Vegetation chunkPosition={pos as [number, number, number]} noise={noise} />
+                                {/* <Vegetation chunkPosition={pos as [number, number, number]} noise={noise} /> */}
                             </group>
                         ))}
                     </group>
 
                     {/* Procedural Road */}
-                    <RoadMesh path={roadPath} />
+                    {/* <RoadMesh path={roadPath} /> */}
                 </group>
 
                 {/* Vehicle */}
                 <Vehicle position={[0, 10, 0]} terrainGroup={terrainGroupRef} />
 
                 {/* Controls - Disable Orbit if using Chase Cam, or keep as debug override */}
-                {/* <OrbitControls /> */}
+                <OrbitControls />
                 <gridHelper args={[500, 10]} />
             </Canvas>
         </div>

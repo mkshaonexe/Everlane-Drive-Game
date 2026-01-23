@@ -15,6 +15,29 @@ export class EngineAudio {
 
         const ctx = this.audioManager.context;
 
+        // Only start if context is running, otherwise schedule for later
+        if (ctx.state !== 'running') {
+            // Will retry when user interacts
+            const retryStart = () => {
+                if (ctx.state === 'running') {
+                    this.createOscillator();
+                    document.removeEventListener('click', retryStart);
+                    document.removeEventListener('keydown', retryStart);
+                }
+            };
+            document.addEventListener('click', retryStart);
+            document.addEventListener('keydown', retryStart);
+            return;
+        }
+
+        this.createOscillator();
+    }
+
+    private createOscillator() {
+        if (this.isRunning) return;
+
+        const ctx = this.audioManager.context;
+
         // Simple Sawtooth wave for rough engine sound
         this.oscillator = ctx.createOscillator();
         this.oscillator.type = 'sawtooth';

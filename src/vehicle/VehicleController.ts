@@ -115,7 +115,7 @@ export class VehicleController {
 
         // Only update angles if free look is active
         if (store.isFreeLookActive) {
-            const deltaX = -event.movementX * this.mouseSensitivity;
+            const deltaX = event.movementX * this.mouseSensitivity;
             const deltaY = -event.movementY * this.mouseSensitivity;
             store.updateFreeLookAngles(deltaX, deltaY);
         }

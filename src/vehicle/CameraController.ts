@@ -16,11 +16,13 @@ export class CameraController {
     setFreeLook(active: boolean, yaw: number, pitch: number) {
         // No longer trigger return animation - camera persists its angle
         this.freeLookActive = active;
-        if (active) {
-            this.freeLookYaw = yaw;
-            this.freeLookPitch = pitch;
-        }
+
+        // Always sync with store values (Store is source of truth for persistence vs reset)
+        this.freeLookYaw = yaw;
+        this.freeLookPitch = pitch;
+
         // When deactivated, keep the current yaw/pitch values for persistent camera angle
+        // (If store sends 0, it will reset. If store sends value, it persists)
     }
 
     updateFreeLookAngles(yaw: number, pitch: number) {

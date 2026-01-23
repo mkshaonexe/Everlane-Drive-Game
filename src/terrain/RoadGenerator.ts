@@ -29,7 +29,7 @@ export class RoadGenerator {
             const nextPos = currentPos.clone().add(currentDir.clone().multiplyScalar(segmentLength));
 
             // Sample terrain height
-            const height = this.noise.getExampleHeight(nextPos.x, nextPos.z);
+            const height = this.noise.getHeight(nextPos.x, nextPos.z);
             nextPos.y = height + 0.5; // Slightly above terrain
 
             points.push(nextPos);

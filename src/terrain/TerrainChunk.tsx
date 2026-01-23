@@ -73,7 +73,7 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution }: { noise: NoiseGen
                     const wz = worldZ + ly; // ly is local y (which becomes world z after rotation)
 
                     // Get height
-                    const h = noise.getExampleHeight(wx, wz);
+                    const h = noise.getHeight(wx, wz);
 
                     // Set Z (which is world Y)
                     pos.setZ(i, h);

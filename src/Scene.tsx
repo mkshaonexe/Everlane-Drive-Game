@@ -1,11 +1,13 @@
 import { Canvas } from '@react-three/fiber'
-import { Environment } from '@react-three/drei'
 import { Vehicle } from './vehicle/Vehicle'
 import { Engine } from './core/Engine';
 import { TerrainChunk } from './terrain/TerrainChunk';
 import { NoiseGenerator } from './terrain/NoiseGenerator';
 import { RoadGenerator } from './terrain/RoadGenerator';
 import { RoadMesh } from './terrain/RoadMesh';
+import { Lighting } from './graphics/Lighting';
+import { Weather } from './graphics/Weather';
+import { Vegetation } from './graphics/Vegetation';
 import { useMemo, useRef } from 'react';
 import { Vector3, Group } from 'three';
 import { CHUNK_SIZE } from './utils/constants';
@@ -30,25 +32,27 @@ export function Scene() {
                     }}
                 />
 
-                {/* Lights */}
-                <ambientLight intensity={0.5} />
-                <directionalLight
-                    position={[10, 50, 20]}
-                    intensity={1.5}
-                    castShadow
-                    shadow-mapSize={[2048, 2048]}
-                />
-                <Environment preset="sunset" />
+                {/* Graphics Systems */}
+                <Lighting />
+                <Weather />
+                {/* <Environment preset="sunset" />  -- Replaced by our dynamic sky/lighting */}
 
                 {/* Collidable Group (Terrain + Road) */}
                 <group ref={terrainGroupRef}>
                     {/* Terrain Chunks (3x3 grid around center) */}
                     <group>
-                        <TerrainChunk position={[0, 0, 0]} noise={noise} />
-                        <TerrainChunk position={[CHUNK_SIZE, 0, 0]} noise={noise} />
-                        <TerrainChunk position={[-CHUNK_SIZE, 0, 0]} noise={noise} />
-                        <TerrainChunk position={[0, 0, CHUNK_SIZE]} noise={noise} />
-                        <TerrainChunk position={[0, 0, -CHUNK_SIZE]} noise={noise} />
+                        {[
+                            [0, 0, 0],
+                            [CHUNK_SIZE, 0, 0],
+                            [-CHUNK_SIZE, 0, 0],
+                            [0, 0, CHUNK_SIZE],
+                            [0, 0, -CHUNK_SIZE]
+                        ].map((pos, i) => (
+                            <group key={i}>
+                                <TerrainChunk position={pos as [number, number, number]} noise={noise} />
+                                <Vegetation chunkPosition={pos as [number, number, number]} noise={noise} />
+                            </group>
+                        ))}
                     </group>
 
                     {/* Procedural Road */}

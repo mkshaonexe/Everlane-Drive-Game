@@ -14,7 +14,7 @@ export class NoiseGenerator {
     /**
      * Fractal Brownian Motion (FBM) noise
      */
-    getExampleHeight(x: number, z: number): number {
+    getHeight(x: number, z: number): number {
         let y = 0;
         let amplitude = 1;
         let frequency = 0.005;

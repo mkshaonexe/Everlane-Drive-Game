@@ -1,34 +1,28 @@
 import { useMemo } from 'react';
-import { DoubleSide, Mesh } from 'three';
+import { DoubleSide, Mesh, MathUtils } from 'three';
 import { NoiseGenerator } from './NoiseGenerator';
 import { CHUNK_SIZE } from '../utils/constants';
+import { RoadMask } from '../utils/RoadMask';
 
 interface TerrainChunkProps {
     position: [number, number, number];
     noise: NoiseGenerator;
+    roadMask?: RoadMask;
 }
 
-export const TerrainChunk = ({ position, noise }: TerrainChunkProps) => {
+export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) => {
     const [x, , z] = position;
 
     // Resolution of the chunk (vertices per edge)
     const resolution = 64;
 
-
-
-    // Simpler approach: Use standard PlaneGeometry and displace it
-
-
     return (
         <group position={position}>
             <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow castShadow>
                 <planeGeometry args={[CHUNK_SIZE, CHUNK_SIZE, resolution - 1, resolution - 1]} />
-                {/* We need to modify vertex heights. Using a custom material or updating geometry.
-            For MVP let's do geometry manipulation in a useEffect or useMemo.
-        */}
-                <ChunkMeshLogic noise={noise} worldX={x} worldZ={z} resolution={resolution} />
+                <ChunkMeshLogic noise={noise} worldX={x} worldZ={z} resolution={resolution} roadMask={roadMask} />
                 <meshStandardMaterial
-                    color="#5c8d45" // Richer, happier green
+                    color="#5c8d45"
                     roughness={1.0}
                     side={DoubleSide}
                     wireframe={false}
@@ -38,12 +32,8 @@ export const TerrainChunk = ({ position, noise }: TerrainChunkProps) => {
     );
 };
 
-// Separated logic to access the geometry
-const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution }: { noise: NoiseGenerator, worldX: number, worldZ: number, resolution: number }) => {
+const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution, roadMask }: { noise: NoiseGenerator, worldX: number, worldZ: number, resolution: number, roadMask?: RoadMask }) => {
     useMemo(() => {
-        // This is a placeholder. 
-        // In R3F, we usually ref the mesh and modify geometry.attributes.position.
-        // But preventing direct DOM manipulation in render body.
         return null;
     }, []);
 
@@ -60,7 +50,8 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution }: { noise: NoiseGen
                 const parent = self.parent as Mesh;
                 if (!parent || !parent.geometry) return;
 
-                // Store generation state on the geometry itself to avoid BufferAttribute issues
+                // Force update if roadMask changes or on first load
+                // We use a timestamp or check if generated with current mask
                 if ((parent.geometry as any).userData?.generated) return;
                 if (!(parent.geometry as any).userData) (parent.geometry as any).userData = {};
 
@@ -68,17 +59,38 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution }: { noise: NoiseGen
 
                 for (let i = 0; i < pos.count; i++) {
                     const lx = pos.getX(i);
-                    const ly = pos.getY(i); // This is Z in plane geometry (up is Y here but rotated)
-                    // Actually plane is X-Y, rotated X-Z. 
+                    const ly = pos.getY(i);
 
                     // World coords
                     const wx = worldX + lx;
-                    const wz = worldZ + ly; // ly is local y (which becomes world z after rotation)
+                    const wz = worldZ + ly;
 
-                    // Get height
-                    const h = noise.getHeight(wx, wz);
+                    // Get base height from noise
+                    let h = noise.getHeight(wx, wz);
 
-                    // Set Z (which is world Y)
+                    // Flatten under road
+                    if (roadMask) {
+                        const distToRoad = roadMask.getDistanceToRoad(wx, wz);
+                        const roadH = roadMask.getRoadHeight(wx, wz);
+                        const width = roadMask.getWidth();
+                        const halfWidth = width * 0.5;
+
+                        if (roadH !== null) {
+                            if (distToRoad < halfWidth) {
+                                // Strictly under road - flatten completely
+                                // Use road height minus buffer to ensure road sits on top
+                                h = roadH - 0.2;
+                            } else if (distToRoad < halfWidth + 4) {
+                                // Shoulder blending zone (4m wide)
+                                const blend = (distToRoad - halfWidth) / 4;
+                                // Smoothstep blend
+                                const t = blend * blend * (3 - 2 * blend);
+                                h = MathUtils.lerp(roadH - 0.2, h, t);
+                            }
+                        }
+                    }
+
+                    // Set Z
                     pos.setZ(i, h);
                 }
 

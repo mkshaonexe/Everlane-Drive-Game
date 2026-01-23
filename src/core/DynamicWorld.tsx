@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Vector3 } from 'three';
 import { TerrainChunk } from '../terrain/TerrainChunk';
@@ -8,6 +8,7 @@ import { ChunkManager } from '../core/ChunkManager';
 import { NoiseGenerator } from '../terrain/NoiseGenerator';
 import { RoadGenerator } from '../terrain/RoadGenerator';
 import { useGameStore } from '../stores/gameStore';
+import { RoadMask } from '../utils/RoadMask';
 
 interface DynamicWorldProps {
     terrainGroupRef: React.RefObject<Group | null>;
@@ -22,6 +23,9 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
     const [roadPath, setRoadPath] = useState(() =>
         roadGen.generatePath(new Vector3(0, 0, 0), new Vector3(0, 0, 1), 600)
     );
+
+    // Create optimized RoadMask for terrain and vegetation
+    const roadMask = useMemo(() => new RoadMask(roadPath, 12), [roadPath]);
 
     const [loadedChunks, setLoadedChunks] = useState<Vector3[]>(() => {
         // Load initial chunks
@@ -72,11 +76,12 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
                         <TerrainChunk
                             position={[pos.x, pos.y, pos.z] as [number, number, number]}
                             noise={noise}
+                            roadMask={roadMask}
                         />
                         <Vegetation
                             chunkPosition={[pos.x, pos.y, pos.z] as [number, number, number]}
                             noise={noise}
-                            roadPath={roadPath}
+                            roadMask={roadMask}
                         />
                     </group>
                 ))}

@@ -1,6 +1,7 @@
-import { useRef, useLayoutEffect, useMemo } from 'react';
-import { InstancedMesh, Object3D, CatmullRomCurve3 } from 'three';
+import { useRef, useLayoutEffect } from 'react';
+import { InstancedMesh, Object3D } from 'three';
 import { NoiseGenerator } from '../terrain/NoiseGenerator';
+import { RoadMask } from '../utils/RoadMask';
 import {
     birchTrunkGeometry,
     birchFoliageGeometry,
@@ -13,35 +14,14 @@ interface VegetationProps {
     chunkPosition: [number, number, number];
     noise: NoiseGenerator;
     count?: number;
-    roadPath?: CatmullRomCurve3;
+    roadMask?: RoadMask;
 }
 
-export function Vegetation({ chunkPosition, noise, count = 200, roadPath }: VegetationProps) {
+export function Vegetation({ chunkPosition, noise, count = 200, roadMask }: VegetationProps) {
     // Refs for three layers: Trunks, Golden Foliage, Orange Foliage
     const trunkRef = useRef<InstancedMesh>(null);
     const goldRef = useRef<InstancedMesh>(null);
     const orangeRef = useRef<InstancedMesh>(null);
-
-    // Pre-calculate road points for distance checking
-    const roadPoints = useMemo(() => {
-        if (!roadPath) return [];
-        return roadPath.getPoints(500);
-    }, [roadPath]);
-
-    // Helper function to check distance to road
-    const getDistanceToRoad = (worldX: number, worldZ: number): number => {
-        if (roadPoints.length === 0) return Infinity;
-        let minDist = Infinity;
-        for (const pt of roadPoints) {
-            const dx = worldX - pt.x;
-            const dz = worldZ - pt.z;
-            const dist = Math.sqrt(dx * dx + dz * dz);
-            if (dist < minDist) minDist = dist;
-            // Early exit if clearly on road
-            if (minDist < 5) break;
-        }
-        return minDist;
-    };
 
     useLayoutEffect(() => {
         if (!trunkRef.current || !goldRef.current || !orangeRef.current) return;
@@ -62,9 +42,11 @@ export function Vegetation({ chunkPosition, noise, count = 200, roadPath }: Vege
             const worldX = chunkX + x;
             const worldZ = chunkZ + z;
 
-            // Road Avoidance - check actual distance to curved road path
-            const distToRoad = getDistanceToRoad(worldX, worldZ);
-            if (distToRoad < 8) continue; // Keep 8m clearance from road center
+            // Road Avoidance - check efficient RoadMask
+            if (roadMask) {
+                const distToRoad = roadMask.getDistanceToRoad(worldX, worldZ);
+                if (distToRoad < 8) continue; // Keep 8m clearance from road center
+            }
 
             const y = noise.getHeight(worldX, worldZ);
 
@@ -102,7 +84,7 @@ export function Vegetation({ chunkPosition, noise, count = 200, roadPath }: Vege
         goldRef.current.instanceMatrix.needsUpdate = true;
         orangeRef.current.instanceMatrix.needsUpdate = true;
 
-    }, [chunkPosition, noise, count, roadPoints]);
+    }, [chunkPosition, noise, count, roadMask]);
 
     return (
         <group position={chunkPosition}>

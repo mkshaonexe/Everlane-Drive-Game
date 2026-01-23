@@ -10,51 +10,65 @@ import { Vector3, CatmullRomCurve3 } from 'three';
 export class RoadMask {
     private roadPoints: Vector3[];
     private roadWidth: number;
-    private roadHeights: Map<string, number> = new Map();
+    private grid: Map<string, Vector3[]> = new Map();
 
     constructor(path: CatmullRomCurve3, width: number = 10) {
-        this.roadPoints = path.getPoints(500);
+        this.roadPoints = path.getPoints(Math.floor(path.getLength() / 2)); // 1 point per 2m approx
         this.roadWidth = width;
 
-        // Pre-cache road heights for faster lookup
+        // Build spatial grid
         for (const pt of this.roadPoints) {
             const key = this.getGridKey(pt.x, pt.z);
-            if (!this.roadHeights.has(key) || pt.y > (this.roadHeights.get(key) ?? 0)) {
-                this.roadHeights.set(key, pt.y);
+            if (!this.grid.has(key)) {
+                this.grid.set(key, []);
             }
+            this.grid.get(key)!.push(pt);
         }
     }
 
     /**
-     * Get grid key for spatial hashing (10m grid cells)
+     * Get grid key for spatial hashing (20m grid cells)
      */
     private getGridKey(x: number, z: number): string {
-        const gx = Math.floor(x / 10);
-        const gz = Math.floor(z / 10);
+        const gx = Math.floor(x / 20);
+        const gz = Math.floor(z / 20);
         return `${gx}_${gz}`;
+    }
+
+    /**
+     * Get nearby points from grid (3x3 area)
+     */
+    private getNearbyPoints(x: number, z: number): Vector3[] {
+        const points: Vector3[] = [];
+        const gx = Math.floor(x / 20);
+        const gz = Math.floor(z / 20);
+
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                const key = `${gx + dx}_${gz + dz}`;
+                const cellPoints = this.grid.get(key);
+                if (cellPoints) {
+                    points.push(...cellPoints);
+                }
+            }
+        }
+        return points;
     }
 
     /**
      * Returns distance to nearest road point (0 = on road center, < width/2 = on road surface)
      */
     getDistanceToRoad(worldX: number, worldZ: number): number {
-        let minDist = Infinity;
+        const nearby = this.getNearbyPoints(worldX, worldZ);
+        if (nearby.length === 0) return Infinity;
 
-        for (const pt of this.roadPoints) {
+        let minDist = Infinity;
+        for (const pt of nearby) {
             const dx = worldX - pt.x;
             const dz = worldZ - pt.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
-
-            if (dist < minDist) {
-                minDist = dist;
-            }
-
-            // Early exit if we're clearly on the road
-            if (minDist < this.roadWidth / 4) {
-                break;
-            }
+            if (dist < minDist) minDist = dist;
         }
-
         return minDist;
     }
 
@@ -63,12 +77,15 @@ export class RoadMask {
      * Uses interpolation for smooth transitions.
      */
     getRoadHeight(worldX: number, worldZ: number): number | null {
+        const nearby = this.getNearbyPoints(worldX, worldZ);
+        if (nearby.length === 0) return null;
+
         let nearestPt: Vector3 | null = null;
         let secondPt: Vector3 | null = null;
         let minDist = Infinity;
         let secondDist = Infinity;
 
-        for (const pt of this.roadPoints) {
+        for (const pt of nearby) {
             const dx = worldX - pt.x;
             const dz = worldZ - pt.z;
             const dist = Math.sqrt(dx * dx + dz * dz);
@@ -110,12 +127,5 @@ export class RoadMask {
      */
     getWidth(): number {
         return this.roadWidth;
-    }
-
-    /**
-     * Get all road points for vegetation checks
-     */
-    getRoadPoints(): Vector3[] {
-        return this.roadPoints;
     }
 }

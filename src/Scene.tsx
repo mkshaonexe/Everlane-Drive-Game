@@ -34,8 +34,8 @@ export function Scene() {
                 {/* Fog for atmosphere */}
                 <fog attach="fog" args={['#0f172a', 20, 300]} />
 
-                {/* Vehicle */}
-                <Vehicle position={[0, 2, 5]} terrainGroup={terrainGroupRef} />
+                {/* Vehicle - spawn on the road, further along the path */}
+                <Vehicle position={[0, 5, 50]} terrainGroup={terrainGroupRef} />
 
                 {/* Controls - Disable Orbit if using Chase Cam, or keep as debug override */}
                 <OrbitControls />

@@ -29,14 +29,6 @@ export function Lighting() {
                 position={sunPosition}
                 color="#ffb347" // Warm orange-peach sunlight
                 intensity={2.2} // High contrast
-                castShadow
-                shadow-mapSize={[2048, 2048]}
-                shadow-camera-left={-150}
-                shadow-camera-right={150}
-                shadow-camera-top={150}
-                shadow-camera-bottom={-150}
-                shadow-camera-far={400}
-                shadow-bias={-0.0001}
             />
 
             {/* Subtle fill light from opposite direction (bounce light simulation) */}

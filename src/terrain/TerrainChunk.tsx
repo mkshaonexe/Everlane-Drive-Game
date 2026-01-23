@@ -200,8 +200,6 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
             <mesh
                 ref={meshRef}
                 rotation={[-Math.PI / 2, 0, 0]}
-                receiveShadow
-                castShadow
             >
                 <planeGeometry args={[CHUNK_SIZE, CHUNK_SIZE, resolution - 1, resolution - 1]} />
                 <meshStandardMaterial

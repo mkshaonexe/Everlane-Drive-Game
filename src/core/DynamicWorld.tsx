@@ -2,7 +2,7 @@ import { useRef, useState, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Vector3 } from 'three';
 import { TerrainChunk } from '../terrain/TerrainChunk';
-import { Vegetation } from '../graphics/Vegetation';
+// import { Vegetation } from '../graphics/Vegetation';
 import { RoadMesh } from '../terrain/RoadMesh';
 import { ChunkManager } from '../core/ChunkManager';
 import { NoiseGenerator } from '../terrain/NoiseGenerator';
@@ -89,11 +89,11 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
                             noise={noise}
                             roadMask={roadMask}
                         />
-                        <Vegetation
-                            chunkPosition={[pos.x, pos.y, pos.z] as [number, number, number]}
-                            noise={noise}
-                            roadMask={roadMask}
-                        />
+                        {/* <Vegetation
+                                chunkPosition={[pos.x, pos.y, pos.z] as [number, number, number]}
+                                noise={noise}
+                                roadMask={roadMask}
+                            /> */}
                     </group>
                 ))}
             </group>

@@ -15,7 +15,7 @@ export function Scene() {
 
     return (
         <div style={{ width: '100%', height: '100%', position: 'relative' }}>
-            <Canvas shadows camera={{ position: [0, 50, 100], fov: 50 }}>
+            <Canvas camera={{ position: [0, 50, 100], fov: 50 }}>
                 {/* Core Engine Loop */}
                 <Engine
                     onPhysicsUpdate={(_dt) => {

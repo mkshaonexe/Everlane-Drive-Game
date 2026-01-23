@@ -1,3 +1,4 @@
+import React from 'react';
 import { useGameStore } from '../stores/gameStore';
 import { FreeLookButton } from './FreeLookButton';
 import { MiniMap } from './MiniMap';
@@ -5,6 +6,35 @@ import { MiniMap } from './MiniMap';
 export function HUD() {
     const speed = useGameStore(state => state.speed);
     const distance = useGameStore(state => state.distance);
+
+    // FPS Counter Logic
+    const fpsRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        let frameCount = 0;
+        let lastTime = performance.now();
+        let animationFrameId: number;
+
+        const loop = () => {
+            const time = performance.now();
+            frameCount++;
+
+            if (time - lastTime >= 1000) {
+                const fps = Math.round((frameCount * 1000) / (time - lastTime));
+                if (fpsRef.current) {
+                    fpsRef.current.innerText = `${fps} FPS`;
+                }
+                frameCount = 0;
+                lastTime = time;
+            }
+
+            animationFrameId = requestAnimationFrame(loop);
+        };
+
+        loop();
+
+        return () => cancelAnimationFrame(animationFrameId);
+    }, []);
 
     // Convert speed to km/h (approx 3.6 conversion from m/s)
     const displaySpeed = Math.round(speed * 3.6);
@@ -17,6 +47,14 @@ export function HUD() {
 
             {/* Mini Map */}
             <MiniMap />
+
+            {/* FPS Counter */}
+            <div
+                ref={fpsRef}
+                className="absolute top-16 left-4 text-green-400 font-mono font-bold text-lg z-50 pointer-events-none drop-shadow-md bg-black/50 px-2 py-1 rounded"
+            >
+                -- FPS
+            </div>
 
             <div className="absolute inset-x-0 bottom-0 p-8 pointer-events-none select-none flex justify-between items-end bg-gradient-to-t from-black/50 to-transparent">
                 {/* Speedometer */}

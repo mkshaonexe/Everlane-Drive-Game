@@ -1,13 +1,13 @@
 import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Environment } from '@react-three/drei'
-import { Vehicle } from './components/Vehicle'
+import { Environment } from '@react-three/drei'
+import { Vehicle } from './vehicle/Vehicle'
 import { Engine } from './core/Engine';
 import { TerrainChunk } from './terrain/TerrainChunk';
 import { NoiseGenerator } from './terrain/NoiseGenerator';
 import { RoadGenerator } from './terrain/RoadGenerator';
 import { RoadMesh } from './terrain/RoadMesh';
-import { useMemo } from 'react';
-import { Vector3 } from 'three';
+import { useMemo, useRef } from 'react';
+import { Vector3, Group } from 'three';
 import { CHUNK_SIZE } from './utils/constants';
 
 export function Scene() {
@@ -17,6 +17,8 @@ export function Scene() {
         // Generate a road starting at 0,0,0 going forward
         return roadGen.generatePath(new Vector3(0, 0, 0), new Vector3(0, 0, 1), 400);
     }, [noise]);
+
+    const terrainGroupRef = useRef<Group>(null);
 
     return (
         <div className="w-full h-full bg-slate-900">
@@ -38,23 +40,26 @@ export function Scene() {
                 />
                 <Environment preset="sunset" />
 
-                {/* Terrain Chunks (3x3 grid around center) */}
-                <group>
-                    <TerrainChunk position={[0, 0, 0]} noise={noise} />
-                    <TerrainChunk position={[CHUNK_SIZE, 0, 0]} noise={noise} />
-                    <TerrainChunk position={[-CHUNK_SIZE, 0, 0]} noise={noise} />
-                    <TerrainChunk position={[0, 0, CHUNK_SIZE]} noise={noise} />
-                    <TerrainChunk position={[0, 0, -CHUNK_SIZE]} noise={noise} />
+                {/* Collidable Group (Terrain + Road) */}
+                <group ref={terrainGroupRef}>
+                    {/* Terrain Chunks (3x3 grid around center) */}
+                    <group>
+                        <TerrainChunk position={[0, 0, 0]} noise={noise} />
+                        <TerrainChunk position={[CHUNK_SIZE, 0, 0]} noise={noise} />
+                        <TerrainChunk position={[-CHUNK_SIZE, 0, 0]} noise={noise} />
+                        <TerrainChunk position={[0, 0, CHUNK_SIZE]} noise={noise} />
+                        <TerrainChunk position={[0, 0, -CHUNK_SIZE]} noise={noise} />
+                    </group>
+
+                    {/* Procedural Road */}
+                    <RoadMesh path={roadPath} />
                 </group>
 
-                {/* Procedural Road */}
-                <RoadMesh path={roadPath} />
-
                 {/* Vehicle */}
-                <Vehicle position={[0, 10, 0]} />
+                <Vehicle position={[0, 10, 0]} terrainGroup={terrainGroupRef} />
 
-                {/* Controls */}
-                <OrbitControls />
+                {/* Controls - Disable Orbit if using Chase Cam, or keep as debug override */}
+                {/* <OrbitControls /> */}
                 <gridHelper args={[500, 10]} />
             </Canvas>
         </div>

@@ -14,7 +14,7 @@ export const RoadMesh = ({ path }: RoadMeshProps) => {
     return (
         <mesh receiveShadow castShadow position={[0, 0.1, 0]}>
             {geometry}
-            <meshStandardMaterial color="#333" roughness={0.6} side={DoubleSide} />
+            <meshStandardMaterial color="#222" roughness={0.6} side={DoubleSide} />
         </mesh>
     );
 };

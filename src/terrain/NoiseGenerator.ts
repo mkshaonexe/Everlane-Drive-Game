@@ -27,7 +27,7 @@ export class NoiseGenerator {
         }
 
         // Scale and bias
-        return Math.pow(y * 0.5 + 0.5, 2) * 50;
+        return Math.pow(y * 0.5 + 0.5, 2) * 20;
     }
 
     getNoise(x: number, z: number, frequency: number = 0.01): number {

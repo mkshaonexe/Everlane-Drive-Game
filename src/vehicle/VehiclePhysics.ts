@@ -3,27 +3,27 @@ import type { InputState } from './VehicleController';
 import { clamp } from 'three/src/math/MathUtils.js';
 
 export class VehiclePhysics {
-    public position: Vector3 = new Vector3(0, 5, 0); // Start slightly above ground
+    public position: Vector3 = new Vector3(0, 5, 0);
     public rotation: Quaternion = new Quaternion();
     public velocity: Vector3 = new Vector3();
-    public angularVelocity: Vector3 = new Vector3(); // Using Vector3 for general angular velocity
+    public angularVelocity: Vector3 = new Vector3();
 
-    // Simple Arcade Physics Ops
+    // Physics parameters
     private speed: number = 0;
     private maxSpeed: number = 60; // m/s
     private acceleration: number = 20; // m/s^2
     private braking: number = 30; // m/s^2
-    // private drag: number = 0.5; // Air resistance (Unused)
     private friction: number = 0.95; // Ground friction
     private turnSpeed: number = 2.0;
 
     private raycaster: Raycaster = new Raycaster();
-    // State
+
+    // Ground detection state
     private groundHeight: number = 0;
     private onGround: boolean = false;
     private isOnRoad: boolean = false;
 
-    // 4-wheel offsets (matching VehicleModel dimensions)
+    // 4-wheel raycasting offsets (matching VehicleModel dimensions)
     private wheelOffsets: Vector3[] = [
         new Vector3(-1.1, 0, -1.5), // Front Left
         new Vector3(1.1, 0, -1.5),  // Front Right
@@ -40,7 +40,7 @@ export class VehiclePhysics {
     private dummyVec: Vector3 = new Vector3();
 
     constructor() {
-        this.raycaster.far = 15;
+        this.raycaster.far = 15; // Extended range for slopes
     }
 
     update(delta: number, input: InputState, terrainObjects: Object3D[]) {
@@ -52,7 +52,7 @@ export class VehiclePhysics {
         if (input.forward) throttle += 1;
         if (input.backward) throttle -= 0.5; // Slower reverse
 
-        // Surface Friction Logic
+        // Surface-based friction and speed multiplier
         let currentFriction = this.friction;
         let speedMultiplier = 1.0;
 
@@ -80,7 +80,7 @@ export class VehiclePhysics {
             else if (this.speed < 0) this.speed = Math.min(0, this.speed + brakePower);
         }
 
-        // Limit Max Speed
+        // Limit Max Speed (apply off-road penalty)
         const maxS = this.isOnRoad ? this.maxSpeed : this.maxSpeed * speedMultiplier;
         this.speed = clamp(this.speed, -this.maxSpeed / 3, maxS);
 
@@ -91,6 +91,7 @@ export class VehiclePhysics {
             if (input.right) steer -= 1;
 
             const dir = Math.sign(this.speed);
+
             // Dynamic turn speed based on velocity
             const turnStrength = this.turnSpeed * (1.0 - Math.abs(this.speed) / (this.maxSpeed * 1.5));
             const rotationAmount = steer * turnStrength * delta * dir;
@@ -151,21 +152,14 @@ export class VehiclePhysics {
 
                 if (hit.normal) groundNormals.push(hit.normal.clone());
 
-                // Check if hit object name or parent has "Road"
+                // Check if hit object is a road (using userData.isRoad flag)
                 let isRoad = false;
                 let curr: Object3D | null = hit.object;
                 while (curr) {
-                    if (curr.type === 'Mesh' && (curr as any).isRoad) { // Custom flag or check type
-                        isRoad = true;
-                        break;
-                    }
-                    // Since RoadMesh doesn't have a specific name, we can check its geometry type or a custom flag we add
                     if (curr.userData?.isRoad) {
                         isRoad = true;
                         break;
                     }
-                    // Fallback: Check Material color if it's very dark (basic check)
-                    // Better: We'll add userData.isRoad to RoadMesh.tsx
                     curr = curr.parent;
                 }
                 if (isRoad) roadHits++;

@@ -65,11 +65,10 @@ export function Scene() {
                 <fog attach="fog" args={['#0f172a', 20, 300]} />
 
                 {/* Vehicle */}
-                <Vehicle position={[0, 10, 0]} terrainGroup={terrainGroupRef} />
+                <Vehicle position={[0, 2, 5]} terrainGroup={terrainGroupRef} />
 
                 {/* Controls - Disable Orbit if using Chase Cam, or keep as debug override */}
                 <OrbitControls />
-                <gridHelper args={[500, 10]} />
             </Canvas>
         </div>
     )

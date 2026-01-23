@@ -54,6 +54,16 @@ export function Vegetation({ chunkPosition, noise, count = 150, roadMask }: Vege
         const treeSpacing = 8; // Minimum spacing between trees
         const placedTrees: Vector3[] = [];
 
+        // Helper to get local slope
+        const getSlope = (nx: number, nz: number): number => {
+            const h0 = noise.getHeight(nx, nz);
+            const h1 = noise.getHeight(nx + 1, nz);
+            const h2 = noise.getHeight(nx, nz + 1);
+            const dx = h1 - h0;
+            const dz = h2 - h0;
+            return Math.sqrt(dx * dx + dz * dz);
+        };
+
         try {
             for (let i = 0; i < count; i++) {
                 // Random position in chunk (use 90% of chunk to avoid edge issues)
@@ -63,13 +73,22 @@ export function Vegetation({ chunkPosition, noise, count = 150, roadMask }: Vege
                 const worldX = chunkX + x;
                 const worldZ = chunkZ + z;
 
-                // Road Avoidance - check efficient RoadMask
+                // Road Avoidance
                 if (roadMask) {
                     const distToRoad = roadMask.getDistanceToRoad(worldX, worldZ);
-                    if (distToRoad < 15) continue; // 15m clearance from road center
+                    if (distToRoad < 12) continue; // slightly reduced from 15 to allow roadside trees
                 }
 
-                // Check spacing from other trees (simple clustering prevention)
+                // Slope Check
+                const slope = getSlope(worldX, worldZ);
+                if (slope > 1.5) continue; // Skip steep slopes
+
+                // Density / Clustering Check
+                // Use a different noise frequency for forest density
+                const density = noise.getNoise(worldX * 0.05, worldZ * 0.05, 123);
+                if (density < -0.2) continue; // Open clearings
+
+                // Check spacing from other trees
                 let tooClose = false;
                 for (const placed of placedTrees) {
                     const dx = worldX - placed.x;
@@ -79,23 +98,32 @@ export function Vegetation({ chunkPosition, noise, count = 150, roadMask }: Vege
                         break;
                     }
                 }
-                if (tooClose && Math.random() > 0.3) continue; // Allow some clustering
+
+                // If in high density area (density > 0.4), allow some overlap/closer spacing
+                if (tooClose) {
+                    if (density > 0.4 && Math.random() > 0.7) {
+                        // Allow it
+                    } else {
+                        continue;
+                    }
+                }
 
                 // Get EXACT terrain height at this position
-                // Trees should be grounded - base at terrain level
                 const groundHeight = noise.getHeight(worldX, worldZ);
 
+                // Add small height offset to bury roots into slope slightly if needed
+                // But generally 0 is fine with our root flares.
+
                 // Scale variation for natural look
-                const scale = 0.7 + Math.random() * 0.6; // 0.7 to 1.3
+                const scale = 0.8 + Math.random() * 0.6; // 0.8 to 1.4
                 const rotation = Math.random() * Math.PI * 2;
 
-                // Decide tree type based on noise (creates natural forest zones)
+                // Decide tree type based on zone noise
                 const zoneNoise = noise.getNoise(worldX * 0.01, worldZ * 0.01, 0.5);
-                const isPine = zoneNoise > 0.6; // ~40% chance of pine in pine zones
+                const isPine = zoneNoise > 0.4; // Slightly more pines
 
                 if (isPine) {
                     // === PINE TREE ===
-                    // Trunk - base at ground level
                     tempObj.position.set(x, groundHeight, z);
                     tempObj.scale.set(scale, scale, scale);
                     tempObj.rotation.set(0, rotation, 0);
@@ -104,7 +132,7 @@ export function Vegetation({ chunkPosition, noise, count = 150, roadMask }: Vege
                         pineTrunkRef.current.setMatrixAt(pineTrunkIdx++, tempObj.matrix);
                     }
 
-                    // Foliage - same position (geometry already positioned relative to trunk)
+                    // Foliage
                     tempObj.position.set(x, groundHeight, z);
                     tempObj.scale.set(scale, scale, scale);
                     tempObj.rotation.set(0, rotation, 0);
@@ -113,8 +141,7 @@ export function Vegetation({ chunkPosition, noise, count = 150, roadMask }: Vege
                         pineFoliageRef.current.setMatrixAt(pineIdx++, tempObj.matrix);
                     }
                 } else {
-                    // === DECIDUOUS TREE (Birch/Aspen) ===
-                    // Trunk - base at ground level (geometry has base at y=0)
+                    // === DECIDUOUS TREE ===
                     tempObj.position.set(x, groundHeight, z);
                     tempObj.scale.set(scale, scale, scale);
                     tempObj.rotation.set(0, rotation, 0);
@@ -123,13 +150,13 @@ export function Vegetation({ chunkPosition, noise, count = 150, roadMask }: Vege
                         deciduousTrunkRef.current.setMatrixAt(deciduousTrunkIdx++, tempObj.matrix);
                     }
 
-                    // Foliage - same base position (geometry has foliage elevated)
+                    // Foliage
                     tempObj.position.set(x, groundHeight, z);
                     tempObj.scale.set(scale, scale, scale);
                     tempObj.rotation.set(0, rotation, 0);
                     tempObj.updateMatrix();
 
-                    // Randomly assign foliage color for autumn variety
+                    // Randomly assign foliage color
                     const colorRoll = Math.random();
                     if (colorRoll < 0.45) {
                         if (goldIdx < count) goldFoliageRef.current.setMatrixAt(goldIdx++, tempObj.matrix);

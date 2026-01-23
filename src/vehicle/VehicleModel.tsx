@@ -57,24 +57,30 @@ export function VehicleModel() {
 
     return (
         <group ref={groupRef} rotation-y={Math.PI / 2}>
+            {/* Fake Shadow Blob */}
+            <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                <circleGeometry args={[2.5, 32]} />
+                <meshBasicMaterial color="#000000" transparent opacity={0.6} depthWrite={false} />
+            </mesh>
+
             {/* Main Body */}
             <mesh position={[0, 0.7, 0]} castShadow receiveShadow geometry={bodyGeometry}>
                 <meshStandardMaterial
-                    color="#f0f0f0"
+                    color="#e0e0e0" // Slightly brighter white
                     roughness={0.2}
-                    metalness={0.6}
-                    envMapIntensity={1.5}
+                    metalness={0.7}
+                    envMapIntensity={2.0} // strong reflections
                 />
             </mesh>
 
             {/* Cabin Glass (Visual overlay for windshield/windows) */}
             <mesh position={[0, 0.95, 0]} geometry={glassGeometry}>
                 <meshStandardMaterial
-                    color="#111"
+                    color="#222"
                     roughness={0.0}
                     metalness={0.9}
                     transparent
-                    opacity={0.7}
+                    opacity={0.8}
                 />
             </mesh>
 
@@ -82,37 +88,37 @@ export function VehicleModel() {
             {/* Front Left */}
             <mesh position={[1.4, wheelRadius, -0.75]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                 <cylinderGeometry args={[wheelRadius, wheelRadius, wheelWidth, 32]} />
-                <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
+                <meshStandardMaterial color="#333333" roughness={0.7} />
                 <mesh position={[0, -0.13, 0]} rotation={[0, 0, 0]}>
-                    <cylinderGeometry args={[wheelRadius * 0.6, wheelRadius * 0.6, 0.05, 16]} />
-                    <meshStandardMaterial color="#888" metalness={0.8} roughness={0.2} />
+                    <cylinderGeometry args={[wheelRadius * 0.7, wheelRadius * 0.7, 0.05, 16]} />
+                    <meshStandardMaterial color="#cccccc" metalness={0.9} roughness={0.1} />
                 </mesh>
             </mesh>
             {/* Front Right */}
             <mesh position={[1.4, wheelRadius, 0.75]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
                 <cylinderGeometry args={[wheelRadius, wheelRadius, wheelWidth, 32]} />
-                <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
+                <meshStandardMaterial color="#333333" roughness={0.7} />
                 <mesh position={[0, 0.13, 0]} rotation={[0, 0, 0]}>
-                    <cylinderGeometry args={[wheelRadius * 0.6, wheelRadius * 0.6, 0.05, 16]} />
-                    <meshStandardMaterial color="#888" metalness={0.8} roughness={0.2} />
+                    <cylinderGeometry args={[wheelRadius * 0.7, wheelRadius * 0.7, 0.05, 16]} />
+                    <meshStandardMaterial color="#cccccc" metalness={0.9} roughness={0.1} />
                 </mesh>
             </mesh>
             {/* Rear Left */}
             <mesh position={[-1.4, wheelRadius, -0.75]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                 <cylinderGeometry args={[wheelRadius, wheelRadius, wheelWidth, 32]} />
-                <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
+                <meshStandardMaterial color="#333333" roughness={0.7} />
                 <mesh position={[0, -0.13, 0]} rotation={[0, 0, 0]}>
-                    <cylinderGeometry args={[wheelRadius * 0.6, wheelRadius * 0.6, 0.05, 16]} />
-                    <meshStandardMaterial color="#888" metalness={0.8} roughness={0.2} />
+                    <cylinderGeometry args={[wheelRadius * 0.7, wheelRadius * 0.7, 0.05, 16]} />
+                    <meshStandardMaterial color="#cccccc" metalness={0.9} roughness={0.1} />
                 </mesh>
             </mesh>
             {/* Rear Right */}
             <mesh position={[-1.4, wheelRadius, 0.75]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
                 <cylinderGeometry args={[wheelRadius, wheelRadius, wheelWidth, 32]} />
-                <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
+                <meshStandardMaterial color="#333333" roughness={0.7} />
                 <mesh position={[0, 0.13, 0]} rotation={[0, 0, 0]}>
-                    <cylinderGeometry args={[wheelRadius * 0.6, wheelRadius * 0.6, 0.05, 16]} />
-                    <meshStandardMaterial color="#888" metalness={0.8} roughness={0.2} />
+                    <cylinderGeometry args={[wheelRadius * 0.7, wheelRadius * 0.7, 0.05, 16]} />
+                    <meshStandardMaterial color="#cccccc" metalness={0.9} roughness={0.1} />
                 </mesh>
             </mesh>
 

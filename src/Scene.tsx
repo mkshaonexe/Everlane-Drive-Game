@@ -31,8 +31,8 @@ export function Scene() {
                 {/* Dynamic World with Infinite Generation */}
                 <DynamicWorld terrainGroupRef={terrainGroupRef} />
 
-                {/* Fog for atmosphere */}
-                <fog attach="fog" args={['#0f172a', 20, 300]} />
+                {/* Fog for atmosphere - warm dusty haze */}
+                <fog attach="fog" args={['#e5dbc1', 20, 300]} />
 
                 {/* Vehicle - spawn on the road, further along the path */}
                 <Vehicle position={[0, 5, 50]} terrainGroup={terrainGroupRef} />

@@ -1,6 +1,5 @@
 import {
     CylinderGeometry,
-    SphereGeometry,
     IcosahedronGeometry,
     ConeGeometry,
     MeshStandardMaterial,
@@ -56,56 +55,57 @@ export const pineBarkMaterial = new MeshStandardMaterial({
 // GEOMETRIES - DECIDUOUS TREES (Birch/Aspen)
 // ============================================
 
+// ============================================
+// GEOMETRIES - DECIDUOUS TREES (Birch/Aspen)
+// ============================================
+
 // Trunk geometry - properly grounded (base at y=0)
-export const birchTrunkGeometry = new CylinderGeometry(0.12, 0.2, 6, 8);
-birchTrunkGeometry.translate(0, 3, 0); // Center so bottom is at y=0
+const birchTrunkBase = new CylinderGeometry(0.12, 0.25, 6, 7);
+birchTrunkBase.translate(0, 3, 0); // Center so bottom is at y=0
+
+// Add root flare
+const birchRoots = new ConeGeometry(0.5, 1.0, 7);
+birchRoots.translate(0, 0.5, 0);
+// Merge logic will handle this if we were merging, but here we are exporting a single geometry.
+// Let's create a specific merged trunk geometry
+export const birchTrunkGeometry = mergeBufferGeometries([birchTrunkBase, birchRoots]) as BufferGeometry;
+
 
 /**
- * Create organic-looking foliage cluster using multiple overlapping spheres
- * This replaces the flat ellipsoid that looked like a mushroom/umbrella
+ * Create organic-looking foliage cluster using cones and irregular shapes
+ * Replaces the "lollipop" sphere look
  */
 function createDeciduousFoliageCluster(): BufferGeometry {
     const geometries: BufferGeometry[] = [];
 
-    // Main central canopy - large icosahedron for organic look
-    const mainCanopy = new IcosahedronGeometry(2.2, 1);
-    mainCanopy.translate(0, 6.5, 0);
-    geometries.push(mainCanopy);
+    // Use low-poly icosahedrons but scaled/rotated to look like leaf clusters
+    // Main central mass
+    const mainMass = new IcosahedronGeometry(1.8, 0); // Low poly
+    mainMass.scale(1, 0.8, 1);
+    mainMass.rotateY(Math.random() * Math.PI);
+    mainMass.translate(0, 6.0, 0);
+    geometries.push(mainMass);
 
-    // Upper crown sphere
-    const upperCrown = new SphereGeometry(1.5, 6, 5);
-    upperCrown.translate(0, 8.2, 0);
-    geometries.push(upperCrown);
-
-    // Side clusters - 4 medium spheres around the main canopy
-    const sidePositions = [
-        { x: 1.3, y: 6.0, z: 0.5 },
-        { x: -1.2, y: 5.8, z: -0.6 },
-        { x: 0.4, y: 5.5, z: 1.4 },
-        { x: -0.5, y: 6.2, z: -1.3 },
+    // Add several "sub-clusters" to break the silhouette
+    const positions = [
+        { x: 1.0, y: 7.0, z: 0.5, s: 0.8 },
+        { x: -1.0, y: 6.5, z: -0.5, s: 0.9 },
+        { x: 0.0, y: 8.0, z: 0.0, s: 0.7 }, // Top
+        { x: 0.5, y: 5.5, z: 1.2, s: 0.7 },
+        { x: -0.5, y: 6.0, z: -1.0, s: 0.7 },
     ];
 
-    for (const pos of sidePositions) {
-        const sideSphere = new IcosahedronGeometry(1.3, 1);
-        sideSphere.translate(pos.x, pos.y, pos.z);
-        geometries.push(sideSphere);
+    for (const pos of positions) {
+        // Mix of Icos and Cones for variety
+        const geo = new IcosahedronGeometry(1.5 * pos.s, 0);
+        geo.scale(1, 0.7, 1);
+        geo.rotateX(Math.random());
+        geo.rotateZ(Math.random());
+        geo.translate(pos.x, pos.y, pos.z);
+        geometries.push(geo);
     }
 
-    // Lower drooping branches - smaller spheres
-    const lowerPositions = [
-        { x: 1.5, y: 4.5, z: 0.2 },
-        { x: -1.4, y: 4.3, z: 0.3 },
-        { x: 0.2, y: 4.0, z: 1.2 },
-        { x: -0.3, y: 4.2, z: -1.1 },
-    ];
-
-    for (const pos of lowerPositions) {
-        const lowerSphere = new SphereGeometry(0.9, 5, 4);
-        lowerSphere.translate(pos.x, pos.y, pos.z);
-        geometries.push(lowerSphere);
-    }
-
-    // Merge all spheres into one geometry
+    // Merge all
     const merged = mergeBufferGeometries(geometries);
     return merged || geometries[0];
 }
@@ -118,8 +118,13 @@ export const birchFoliageGeometry = createDeciduousFoliageCluster();
 // ============================================
 
 // Pine trunk - taller and thinner
-export const pineTrunkGeometry = new CylinderGeometry(0.15, 0.25, 8, 8);
-pineTrunkGeometry.translate(0, 4, 0); // Base at y=0
+const pineTrunkBase = new CylinderGeometry(0.15, 0.35, 8, 7);
+pineTrunkBase.translate(0, 4, 0); // Base at y=0
+// Add roots
+const pineRoots = new ConeGeometry(0.7, 1.2, 7);
+pineRoots.translate(0, 0.6, 0);
+export const pineTrunkGeometry = mergeBufferGeometries([pineTrunkBase, pineRoots]) as BufferGeometry;
+
 
 /**
  * Create cone-based pine tree foliage (multiple stacked cones)
@@ -127,25 +132,26 @@ pineTrunkGeometry.translate(0, 4, 0); // Base at y=0
 function createPineFoliageCluster(): BufferGeometry {
     const geometries: BufferGeometry[] = [];
 
-    // Bottom tier - largest cone
-    const bottomCone = new ConeGeometry(2.5, 3, 8);
-    bottomCone.translate(0, 5, 0);
-    geometries.push(bottomCone);
+    // 4 Tiers for better look
+    const tiers = [
+        { y: 4.5, r: 2.8, h: 3.5 }, // Bottom
+        { y: 6.5, r: 2.3, h: 3.0 },
+        { y: 8.5, r: 1.6, h: 2.5 },
+        { y: 10.2, r: 0.8, h: 1.8 } // Top
+    ];
 
-    // Middle tier
-    const middleCone = new ConeGeometry(2.0, 2.5, 8);
-    middleCone.translate(0, 7, 0);
-    geometries.push(middleCone);
+    for (const tier of tiers) {
+        // Use 7 segments for low poly look
+        const cone = new ConeGeometry(tier.r, tier.h, 7);
+        cone.translate(0, tier.y, 0);
+        geometries.push(cone);
 
-    // Top tier - smallest cone
-    const topCone = new ConeGeometry(1.3, 2, 8);
-    topCone.translate(0, 8.8, 0);
-    geometries.push(topCone);
-
-    // Apex
-    const apex = new ConeGeometry(0.6, 1.2, 6);
-    apex.translate(0, 10.2, 0);
-    geometries.push(apex);
+        // Add a second slightly offset cone to make it dense/irregular
+        const coneInner = new ConeGeometry(tier.r * 0.8, tier.h, 7);
+        coneInner.rotateY(0.4); // Offset rotation
+        coneInner.translate(0, tier.y, 0);
+        geometries.push(coneInner);
+    }
 
     const merged = mergeBufferGeometries(geometries);
     return merged || geometries[0];
@@ -157,9 +163,17 @@ export const pineFoliageGeometry = createPineFoliageCluster();
 // GEOMETRIES - BUSH / SHRUB
 // ============================================
 
-export const bushGeometry = new IcosahedronGeometry(1.0, 1);
-bushGeometry.scale(1.2, 0.8, 1.2);
-bushGeometry.translate(0, 0.6, 0); // Base near ground
+export const bushGeometry = new IcosahedronGeometry(0.8, 0); // Low poly
+bushGeometry.scale(1.5, 0.7, 1.5);
+bushGeometry.translate(0, 0.5, 0); // Base near ground
+// Add detail lumps
+const bushLump1 = new IcosahedronGeometry(0.5, 0);
+bushLump1.translate(0.6, 0.6, 0.2);
+const bushLump2 = new IcosahedronGeometry(0.5, 0);
+bushLump2.translate(-0.5, 0.5, -0.4);
+
+// Merge bush
+const bushMerged = mergeBufferGeometries([bushGeometry, bushLump1, bushLump2]) as BufferGeometry;
 
 export const bushMaterial = new MeshStandardMaterial({
     color: '#3d6b3d',
@@ -182,7 +196,7 @@ export function getTreeGeometries(type: TreeType): {
     switch (type) {
         case 'pine':
             return {
-                trunk: pineTrunkGeometry,
+                trunk: pineTrunkGeometry, // Now this IS the merged one
                 foliage: pineFoliageGeometry,
                 trunkMaterial: pineBarkMaterial,
                 foliageMaterial: pineNeedleMaterial,
@@ -190,14 +204,14 @@ export function getTreeGeometries(type: TreeType): {
         case 'bush':
             return {
                 trunk: new BufferGeometry(), // No trunk for bush
-                foliage: bushGeometry,
+                foliage: bushMerged,
                 trunkMaterial: bushMaterial,
                 foliageMaterial: bushMaterial,
             };
         case 'birch':
         default:
             return {
-                trunk: birchTrunkGeometry,
+                trunk: birchTrunkGeometry, // Now this IS the merged one
                 foliage: birchFoliageGeometry,
                 trunkMaterial: birchBarkMaterial,
                 foliageMaterial: goldenFoliageMaterial,

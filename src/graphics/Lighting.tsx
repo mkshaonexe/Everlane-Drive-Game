@@ -13,14 +13,14 @@ export function Lighting() {
             {/* Ambient light - warm autumn tone */}
             <ambientLight
                 color="#ffeedd"
-                intensity={0.5}
+                intensity={0.3}
             />
 
             {/* Hemisphere light for sky/ground color gradient */}
             <hemisphereLight
                 color="#ffd4a3" // Warm sky color (golden hour)
                 groundColor="#8b7355" // Warm brown earth
-                intensity={0.4}
+                intensity={0.3}
             />
 
             {/* Directional sun light - golden hour */}
@@ -28,7 +28,7 @@ export function Lighting() {
                 ref={sunRef}
                 position={sunPosition}
                 color="#ffb347" // Warm orange-peach sunlight
-                intensity={1.8} // Brighter for autumn clarity
+                intensity={2.2} // High contrast
                 castShadow
                 shadow-mapSize={[2048, 2048]}
                 shadow-camera-left={-150}

@@ -17,7 +17,7 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
     const meshRef = useRef<Mesh>(null);
 
     // Resolution of the chunk (vertices per edge)
-    const resolution = 64;
+    const resolution = 128;
 
     useLayoutEffect(() => {
         const mesh = meshRef.current;

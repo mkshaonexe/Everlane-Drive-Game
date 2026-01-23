@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo } from 'react';
+import { useRef, useState, useMemo, useEffect } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Vector3 } from 'three';
 import { TerrainChunk } from '../terrain/TerrainChunk';
@@ -23,6 +23,11 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
     const [roadPath, setRoadPath] = useState(() =>
         roadGen.generatePath(new Vector3(0, 0, 0), new Vector3(0, 0, 1), 600)
     );
+
+    // Sync to store on mount and updates
+    useEffect(() => {
+        useGameStore.getState().setRoadPath(roadPath.points);
+    }, [roadPath]);
 
     // Create optimized RoadMask for terrain and vegetation
     const roadMask = useMemo(() => new RoadMask(roadPath, 12), [roadPath]);

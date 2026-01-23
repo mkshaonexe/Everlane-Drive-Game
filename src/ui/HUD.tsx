@@ -1,5 +1,6 @@
 import { useGameStore } from '../stores/gameStore';
 import { FreeLookButton } from './FreeLookButton';
+import { MiniMap } from './MiniMap';
 
 export function HUD() {
     const { speed, distance } = useGameStore();
@@ -12,6 +13,9 @@ export function HUD() {
         <>
             {/* Free Look Button */}
             <FreeLookButton />
+
+            {/* Mini Map */}
+            <MiniMap />
 
             <div className="absolute inset-x-0 bottom-0 p-8 pointer-events-none select-none flex justify-between items-end bg-gradient-to-t from-black/50 to-transparent">
                 {/* Speedometer */}

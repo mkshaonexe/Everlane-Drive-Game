@@ -24,6 +24,9 @@ interface GameState {
     toggleFreeLookButton: () => void;
     updateFreeLookAngles: (deltaYaw: number, deltaPitch: number) => void;
     resetFreeLookAngles: () => void;
+    // Road Data (for MiniMap & Respawn)
+    roadPath: Vector3[];
+    setRoadPath: (path: Vector3[]) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -37,6 +40,9 @@ export const useGameStore = create<GameState>((set) => ({
     isFreeLookButtonActive: false,
     freeLookYaw: 0,
     freeLookPitch: 0,
+
+    // Road Data Initial State
+    roadPath: [],
 
     setSpeed: (speed) => set({ speed }),
     addDistance: (delta) => set((state) => ({ distance: state.distance + delta })),
@@ -59,4 +65,7 @@ export const useGameStore = create<GameState>((set) => ({
         freeLookPitch: Math.max(-Math.PI / 3, Math.min(Math.PI / 3, state.freeLookPitch + deltaPitch)),
     })),
     resetFreeLookAngles: () => set({ freeLookYaw: 0, freeLookPitch: 0 }),
+
+    // Road Data Actions
+    setRoadPath: (path) => set({ roadPath: path }),
 }));

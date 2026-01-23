@@ -7,6 +7,7 @@ import { VehicleController } from './VehicleController';
 import { CameraController } from './CameraController';
 import { AmbientAudio } from '../audio/AmbientAudio';
 import { EngineAudio } from '../audio/EngineAudio';
+import { useGameStore } from '../stores/gameStore';
 
 interface VehicleProps {
     position?: [number, number, number];
@@ -27,7 +28,6 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
     const controller = useMemo(() => new VehicleController(), []);
     const cameraController = useMemo(() => new CameraController(camera), [camera]);
 
-    // Cleanup controller events
     // Cleanup controller events
     useEffect(() => {
         return () => controller.dispose();
@@ -60,6 +60,11 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         const speed = physics.velocity.length();
         engineAudio.update(speed);
         speedRef.current = speed;
+
+        // Update UI Store (throttled slightly if needed, but per frame is fine for simple store)
+        const { setSpeed, addDistance } = useGameStore.getState();
+        setSpeed(speed);
+        addDistance(speed * dt); // Distance = Speed * Time
 
         // 3. Update Visuals
         groupRef.current.position.copy(physics.position);

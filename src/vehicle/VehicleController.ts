@@ -117,9 +117,9 @@ export class VehicleController {
         }
     };
 
-    private onContextMenu = (event: MouseEvent) => {
-        // Prevent right-click context menu
-        event.preventDefault();
+    private onContextMenu = (_event: MouseEvent) => {
+        // Allow right-click context menu for debugging purposes
+        // (Previously blocked with event.preventDefault())
     };
 
     private onWheel = (event: WheelEvent) => {

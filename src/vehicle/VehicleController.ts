@@ -85,8 +85,9 @@ export class VehicleController {
     };
 
     private onMouseDown = (event: MouseEvent) => {
-        // Right mouse button (button 2) - always activate free look for rotation
-        if (event.button === 2) {
+        // Button 0 (Left) or Button 2 (Right) - always activate free look for rotation
+        // This handles users who might confuse buttons or prefer left-click drag
+        if (event.button === 0 || event.button === 2) {
             const store = useGameStore.getState();
             store.setFreeLookActive(true);
         }
@@ -98,15 +99,15 @@ export class VehicleController {
     };
 
     private onMouseUp = (event: MouseEvent) => {
-        if (event.button === 2) {
+        // Check for Left (0) or Right (2) release
+        if (event.button === 0 || event.button === 2) {
             const store = useGameStore.getState();
             store.setFreeLookActive(false);
-            // If eye button is NOT active, reset angles on release (old behavior)
+            // If eye button is NOT active, reset angles on release
             // If eye button IS active, keep the angles (persistent camera)
             if (!store.isFreeLookButtonActive) {
                 store.resetFreeLookAngles();
             }
-            // When eye button is active, angles persist after release
         }
     };
 

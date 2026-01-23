@@ -12,6 +12,7 @@ export function FreeLookButton() {
                 e.stopPropagation();
                 toggleFreeLookButton();
             }}
+            onMouseDown={(e) => e.stopPropagation()} // Prevent camera rotation start
             className={`
                 fixed bottom-32 right-8
                 w-14 h-14

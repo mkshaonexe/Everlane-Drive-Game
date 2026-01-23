@@ -47,7 +47,7 @@ export function Vegetation({ chunkPosition, noise, count = 200, roadMask }: Vege
                 // Road Avoidance - check efficient RoadMask
                 if (roadMask) {
                     const distToRoad = roadMask.getDistanceToRoad(worldX, worldZ);
-                    if (distToRoad < 8) continue; // Keep 8m clearance from road center
+                    if (distToRoad < 12) continue; // Keep 12m clearance from road center for clean roadside
                 }
 
                 const y = noise.getHeight(worldX, worldZ);

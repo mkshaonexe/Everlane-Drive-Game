@@ -164,9 +164,9 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
             <mesh receiveShadow castShadow userData={{ isRoad: true }}>
                 <primitive object={roadGeometry} attach="geometry" />
                 <meshStandardMaterial
-                    color="#1a1a1a" // Dark asphalt
-                    roughness={0.9} // Very rough/matte
-                    metalness={0.1}
+                    color="#3a3a40" // Medium gray asphalt matching reference images
+                    roughness={0.85} // Matte but not completely rough
+                    metalness={0.05}
                     side={DoubleSide}
                 />
             </mesh>

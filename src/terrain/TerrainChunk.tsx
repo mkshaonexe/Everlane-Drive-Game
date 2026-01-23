@@ -127,9 +127,14 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                     const halfWidth = width * 0.5;
 
                     if (roadH !== null) {
-                        // Under road surface - flatten completely
+                        // CRITICAL FIX: Always ensure terrain is BELOW road level
+                        // This prevents road from rendering inside/under terrain hills
+                        const terrainCarvingOffset = 0.5; // Deep carving offset (was 0.08)
+
+                        // Under road surface - flatten completely and force carve
                         if (distToRoad < halfWidth) {
-                            h = roadH - 0.08; // Slightly below road
+                            // Force terrain to be well below road regardless of original height
+                            h = roadH - terrainCarvingOffset;
                             // Dark dirt color (won't be visible under road)
                             finalColor.copy(roadEdgeDirtColor).multiplyScalar(0.6);
                         }
@@ -138,8 +143,11 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                             const blend = (distToRoad - halfWidth) / 4;
                             const smoothBlend = blend * blend * (3 - 2 * blend); // smoothstep
 
-                            // Height: Very close to road level
-                            h = MathUtils.lerp(roadH - 0.05, roadH + 0.1, smoothBlend);
+                            // Height: FORCE terrain to be at or below road level
+                            // Blend from slightly below road to road level
+                            const targetH = MathUtils.lerp(roadH - 0.3, roadH - 0.05, smoothBlend);
+                            // If terrain is higher than target, force it down
+                            h = Math.min(h, targetH);
 
                             // Color: Gravel/dirt shoulder
                             finalColor.lerp(gravelColor, 1 - smoothBlend * 0.5);
@@ -151,7 +159,11 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                             const smoothBlend = blend * blend * (3 - 2 * blend);
 
                             // Height: Gradual slope from road level to natural terrain
-                            h = MathUtils.lerp(roadH + 0.1, h, smoothBlend * 0.8 + 0.2);
+                            // But NEVER let terrain rise above road level in this zone
+                            const naturalHeight = h;
+                            const blendedH = MathUtils.lerp(roadH - 0.05, naturalHeight, smoothBlend * 0.8 + 0.2);
+                            // Cap height to prevent terrain from rising above road
+                            h = Math.min(blendedH, roadH + (distToRoad - halfWidth) * 0.1);
 
                             // Color: Transition from dirt to grass
                             const dirtAmount = 1 - smoothBlend;
@@ -162,8 +174,11 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                             const blend = (distToRoad - halfWidth - 16) / 20;
                             const smoothBlend = blend * blend * (3 - 2 * blend);
 
-                            // Height: Very gentle blend to natural terrain
-                            h = MathUtils.lerp(roadH * 0.2 + h * 0.8, h, smoothBlend);
+                            // Height: Gradual blend to natural terrain
+                            // Allow terrain to rise gradually in this zone
+                            const maxRise = (distToRoad - halfWidth) * 0.15; // Gradual slope limit
+                            const blendedH = MathUtils.lerp(roadH + maxRise * 0.3, h, smoothBlend);
+                            h = Math.min(blendedH, roadH + maxRise);
 
                             // Color: Subtle dirt tint near road fades out
                             finalColor.lerp(darkGrassColor, (1 - smoothBlend) * 0.2);

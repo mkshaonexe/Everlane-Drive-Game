@@ -43,7 +43,7 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
         const up = new Vector3(0, 1, 0);
 
         const shoulderWidth = 2.5;
-        const shoulderDrop = 1.5;
+        const shoulderDrop = 0.4; // Reduced from 1.5m to 0.4m for seamless ground integration
 
         for (let i = 0; i <= segments; i++) {
             const t = i / segments;
@@ -65,8 +65,8 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
             rightShoulder.y -= shoulderDrop;
 
             // Vertices order: LeftShoulder, LeftRoad, RightRoad, RightShoulder
-            // Y offset slightly to avoid z-fighting with terrain if close
-            const yOffset = 0.15;
+            // Y offset reduced to sit nearly flush with terrain
+            const yOffset = 0.05; // Reduced from 0.15 to prevent floating appearance
 
             // 0: Left Shoulder
             positions.push(leftShoulder.x, leftShoulder.y + yOffset, leftShoulder.z);
@@ -140,7 +140,7 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
                 const tangent = path.getTangentAt(t).normalize();
                 const right = new Vector3().crossVectors(tangent, up).normalize();
 
-                const yOffset = 0.18;
+                const yOffset = 0.08; // Slightly above road surface
 
                 const l1 = p1.clone().add(right.clone().multiplyScalar(-lineWidth / 2));
                 const r1 = p1.clone().add(right.clone().multiplyScalar(lineWidth / 2));
@@ -163,7 +163,7 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
 
         // Edge lines (Solid)
         const edgeWidth = 0.15;
-        const yOffsetEdge = 0.18;
+        const yOffsetEdge = 0.08; // Consistent with lane markings
 
         const leftEdgeGeo = new BufferGeometry();
         const rightEdgeGeo = new BufferGeometry();
@@ -214,8 +214,8 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
 
     return (
         <group>
-            {/* Road surface */}
-            <mesh receiveShadow castShadow userData={{ isRoad: true }}>
+            {/* Road surface with renderOrder and polygonOffset to prevent Z-fighting */}
+            <mesh receiveShadow castShadow userData={{ isRoad: true }} renderOrder={10}>
                 <primitive object={roadGeometry} attach="geometry" />
                 <meshStandardMaterial
                     map={asphaltTexture}
@@ -223,6 +223,9 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
                     roughness={0.9}
                     metalness={0.1}
                     side={DoubleSide}
+                    polygonOffset={true}
+                    polygonOffsetFactor={-1}
+                    polygonOffsetUnits={-1}
                 />
             </mesh>
 

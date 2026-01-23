@@ -77,8 +77,8 @@ export function MiniMap() {
             offsetX = -mapCx;
             offsetZ = -mapCz;
 
-            // Background
-            ctx.fillStyle = 'rgba(20, 20, 25, 0.95)';
+            // Background with darker overlay for better visibility
+            ctx.fillStyle = 'rgba(15, 15, 20, 0.97)';
             ctx.fillRect(0, 0, width, height);
 
         } else {
@@ -185,14 +185,55 @@ export function MiniMap() {
         // Text Overlay for Full Map
         if (isExpanded) {
             ctx.fillStyle = 'white';
-            ctx.font = '20px sans-serif';
+            ctx.font = 'bold 24px sans-serif';
             ctx.textAlign = 'left';
-            ctx.fillText("World Map", 40, 50);
+            ctx.fillText("🗺️ World Map", 40, 50);
 
             ctx.font = '14px sans-serif';
-            ctx.fillStyle = '#ccc';
+            ctx.fillStyle = '#aaa';
             ctx.fillText(`${roadPath?.length || 0} Road Segments`, 40, 80);
-            ctx.fillText("Click anywhere to close", 40, 110);
+
+            // Draw visible close button (X) in top-right corner
+            const btnX = width - 50;
+            const btnY = 50;
+            const btnRadius = 25;
+
+            // Button circle with hover effect
+            ctx.fillStyle = 'rgba(255, 85, 85, 0.9)';
+            ctx.beginPath();
+            ctx.arc(btnX, btnY, btnRadius, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Button border
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // X icon
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(btnX - 10, btnY - 10);
+            ctx.lineTo(btnX + 10, btnY + 10);
+            ctx.moveTo(btnX + 10, btnY - 10);
+            ctx.lineTo(btnX - 10, btnY + 10);
+            ctx.stroke();
+
+            // Instructions at bottom
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.font = '14px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText("Click X button or anywhere to close", width / 2, height - 30);
+
+            // Red dot legend
+            ctx.fillStyle = '#FF4444';
+            ctx.beginPath();
+            ctx.arc(40, height - 60, 6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+            ctx.textAlign = 'left';
+            ctx.fillText("= Your Position", 55, height - 55);
         }
 
     }, [position, roadPath, isExpanded]);
@@ -211,11 +252,24 @@ export function MiniMap() {
                 className={`transition-all duration-300 ${isExpanded ? 'rounded-lg shadow-2xl border border-white/10' : 'rounded-full border-2 border-white/20 shadow-lg backdrop-blur-sm'
                     }`}
             />
-            {/* MiniMap Label */}
+            {/* MiniMap Expand hint */}
             {!isExpanded && (
                 <div className={`absolute -bottom-6 w-full text-center text-xs font-bold uppercase tracking-widest transition-colors ${hovered ? 'text-white' : 'text-white/70'}`}>
                     {hovered ? "Open Map" : "Map"}
                 </div>
+            )}
+            {/* Visible Close Button overlay for expanded mode */}
+            {isExpanded && (
+                <button
+                    className="absolute top-4 right-4 w-14 h-14 bg-red-500 hover:bg-red-400 rounded-full flex items-center justify-center shadow-lg border-2 border-white/30 transition-all hover:scale-110 z-50"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setIsExpanded(false);
+                    }}
+                    title="Close map"
+                >
+                    <span className="text-white text-2xl font-bold">✕</span>
+                </button>
             )}
         </div>
     );

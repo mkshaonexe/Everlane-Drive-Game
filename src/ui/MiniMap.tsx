@@ -3,10 +3,8 @@ import { useGameStore } from '../stores/gameStore';
 
 export function MiniMap() {
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const { position, roadPath } = useGameStore(state => ({
-        position: state.position,
-        roadPath: state.roadPath
-    }));
+    const position = useGameStore(state => state.position);
+    const roadPath = useGameStore(state => state.roadPath);
 
     // We need vehicle rotation for Track Up. 
     // Let's update Vehicle.tsx to set rotation in store, OR just use North Up.

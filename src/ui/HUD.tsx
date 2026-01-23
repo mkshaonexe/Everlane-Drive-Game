@@ -3,7 +3,8 @@ import { FreeLookButton } from './FreeLookButton';
 import { MiniMap } from './MiniMap';
 
 export function HUD() {
-    const { speed, distance } = useGameStore();
+    const speed = useGameStore(state => state.speed);
+    const distance = useGameStore(state => state.distance);
 
     // Convert speed to km/h (approx 3.6 conversion from m/s)
     const displaySpeed = Math.round(speed * 3.6);

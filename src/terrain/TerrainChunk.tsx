@@ -28,8 +28,8 @@ export const TerrainChunk = ({ position, noise }: TerrainChunkProps) => {
         */}
                 <ChunkMeshLogic noise={noise} worldX={x} worldZ={z} resolution={resolution} />
                 <meshStandardMaterial
-                    color="#5a8f4c"
-                    roughness={0.8}
+                    color="#3a5a40"
+                    roughness={0.9}
                     side={DoubleSide}
                     wireframe={false}
                 />
@@ -60,10 +60,11 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution }: { noise: NoiseGen
                 const parent = self.parent as Mesh;
                 if (!parent || !parent.geometry) return;
 
+                // Store generation state on the geometry itself to avoid BufferAttribute issues
+                if ((parent.geometry as any).userData?.generated) return;
+                if (!(parent.geometry as any).userData) (parent.geometry as any).userData = {};
+
                 const pos = parent.geometry.attributes.position as any;
-                // Initialize userData if it doesn't exist (BufferAttribute doesn't have it by default)
-                if (!pos.userData) pos.userData = {};
-                if (pos.userData.generated) return;
 
                 for (let i = 0; i < pos.count; i++) {
                     const lx = pos.getX(i);
@@ -83,7 +84,7 @@ const ChunkMeshLogic = ({ noise, worldX, worldZ, resolution }: { noise: NoiseGen
 
                 pos.needsUpdate = true;
                 parent.geometry.computeVertexNormals();
-                pos.userData.generated = true;
+                (parent.geometry as any).userData.generated = true;
             }}
         />
     )

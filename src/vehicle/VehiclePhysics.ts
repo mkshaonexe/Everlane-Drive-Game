@@ -113,9 +113,9 @@ export class VehiclePhysics {
     }
 
     private checkGround(terrainObjects: Object3D[]) {
-        // Raycast down from slightly above vehicle center
-        // Origin: position + up * 1
-        const rayOrigin = this.position.clone().add(new Vector3(0, 1.0, 0));
+        // Raycast down from higher up to avoid missing ground on steep slopes
+        // Origin: position + up * 5
+        const rayOrigin = this.position.clone().add(new Vector3(0, 5.0, 0));
         const rayDir = new Vector3(0, -1, 0);
 
         this.raycaster.set(rayOrigin, rayDir);

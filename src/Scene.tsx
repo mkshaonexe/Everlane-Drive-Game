@@ -52,14 +52,17 @@ export function Scene() {
                         ].map((pos, i) => (
                             <group key={i}>
                                 <TerrainChunk position={pos as [number, number, number]} noise={noise} />
-                                {/* <Vegetation chunkPosition={pos as [number, number, number]} noise={noise} /> */}
+                                <Vegetation chunkPosition={pos as [number, number, number]} noise={noise} />
                             </group>
                         ))}
                     </group>
 
                     {/* Procedural Road */}
-                    {/* <RoadMesh path={roadPath} /> */}
+                    <RoadMesh path={roadPath} />
                 </group>
+
+                {/* Fog for atmosphere */}
+                <fog attach="fog" args={['#0f172a', 20, 300]} />
 
                 {/* Vehicle */}
                 <Vehicle position={[0, 10, 0]} terrainGroup={terrainGroupRef} />

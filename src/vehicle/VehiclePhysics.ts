@@ -125,8 +125,22 @@ export class VehiclePhysics {
             this.groundHeight = intersects[0].point.y;
 
             // If we are close to ground, we are "on ground"
-            if (this.position.y <= this.groundHeight + 1.0) {
+            if (this.position.y <= this.groundHeight + 1.5) { // Increased tolerance slightly
                 this.onGround = true;
+
+                // Align to ground normal
+                if (intersects[0].face) {
+                    // Use world normal from intersection (interpolated) or default up
+                    const groundNormal = intersects[0].normal || new Vector3(0, 1, 0);
+
+                    // Smoothly align 'up' to groundNormal
+                    // We blend the tilt to the current rotation to preserve yaw
+                    const currentUp = new Vector3(0, 1, 0).applyQuaternion(this.rotation);
+                    const tiltQuat = new Quaternion().setFromUnitVectors(currentUp, groundNormal);
+
+                    // Apply tilt
+                    this.rotation.premultiply(tiltQuat);
+                }
             } else {
                 this.onGround = false;
             }

@@ -41,7 +41,7 @@ export function VehicleModel({ vehicleId }: { vehicleId?: string }) {
     // --- GLTF Loading ---
     if (config.type === 'gltf' && config.path) {
         return (
-            <group ref={groupRef} rotation-y={-Math.PI / 2}>
+            <group ref={groupRef} rotation-y={Math.PI}>
                 {/* Main Shadow Plane */}
                 <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                     <planeGeometry args={[5, 2.4]} />
@@ -239,7 +239,7 @@ function ProceduralVehicle({ id }: { id: string }) {
     );
 
     return (
-        <group ref={groupRef} rotation-y={-Math.PI / 2}>
+        <group ref={groupRef} rotation-y={0}>
             {/* Main Shadow Plane */}
             <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                 <planeGeometry args={[5, 2.4]} />

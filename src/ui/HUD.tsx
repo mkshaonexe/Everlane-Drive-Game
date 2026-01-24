@@ -9,6 +9,7 @@ export function HUD() {
     const distance = useGameStore(state => state.distance);
     const isMuted = useGameStore(state => state.isMuted);
     const toggleMute = useGameStore(state => state.toggleMute);
+    const showFps = useGameStore(state => state.showFps);
 
     const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
@@ -79,12 +80,14 @@ export function HUD() {
             <MiniMap />
 
             {/* FPS Counter */}
-            <div
-                ref={fpsRef}
-                className="absolute top-16 left-4 text-green-400 font-mono font-bold text-lg z-50 pointer-events-none drop-shadow-md bg-black/50 px-2 py-1 rounded"
-            >
-                -- FPS
-            </div>
+            {showFps && (
+                <div
+                    ref={fpsRef}
+                    className="absolute top-16 left-4 text-green-400 font-mono font-bold text-lg z-50 pointer-events-none drop-shadow-md bg-black/50 px-2 py-1 rounded"
+                >
+                    -- FPS
+                </div>
+            )}
 
             <div className="absolute inset-x-0 bottom-0 p-8 pointer-events-none select-none flex justify-between items-end bg-gradient-to-t from-black/50 to-transparent">
                 {/* Speedometer */}

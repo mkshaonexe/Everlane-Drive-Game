@@ -15,19 +15,8 @@ export class NoiseGenerator {
      * Fractal Brownian Motion (FBM) noise
      */
     getHeight(x: number, z: number): number {
-        let y = 0;
-        let amplitude = 1;
-        let frequency = 0.005;
-
-        // 4 Octaves
-        for (let i = 0; i < 4; i++) {
-            y += this.noise2D(x * frequency, z * frequency) * amplitude;
-            amplitude *= 0.5;
-            frequency *= 2;
-        }
-
-        // Scale and bias
-        return Math.pow(y * 0.5 + 0.5, 2) * 20;
+        // FLAT WORLD - Always return 0
+        return 0;
     }
 
     getNoise(x: number, z: number, frequency: number = 0.01): number {

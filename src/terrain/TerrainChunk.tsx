@@ -120,71 +120,8 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
                 // ROAD INTEGRATION - Smooth terrain blending
                 // ============================================
 
-                if (roadMask) {
-                    const distToRoad = roadMask.getDistanceToRoad(wx, wz);
-                    const roadH = roadMask.getRoadHeight(wx, wz);
-                    const width = roadMask.getWidth();
-                    const halfWidth = width * 0.5;
-
-                    if (roadH !== null) {
-                        // CRITICAL FIX: Always ensure terrain is BELOW road level
-                        // This prevents road from rendering inside/under terrain hills
-                        const terrainCarvingOffset = 0.1; // Deep carving offset (reduced from 0.5 to 0.1 for tightness)
-
-                        // Under road surface - flatten completely and force carve
-                        if (distToRoad < halfWidth) {
-                            // Force terrain to be well below road regardless of original height
-                            h = roadH - terrainCarvingOffset;
-                            // Dark dirt color (won't be visible under road)
-                            finalColor.copy(roadEdgeDirtColor).multiplyScalar(0.6);
-                        }
-                        // Immediate gravel shoulder (4m wide - wider)
-                        else if (distToRoad < halfWidth + 4) {
-                            const blend = (distToRoad - halfWidth) / 4;
-                            const smoothBlend = blend * blend * (3 - 2 * blend); // smoothstep
-
-                            // Height: FORCE terrain to be at or below road level
-                            // Blend from slightly below road (matching carving offset) to road level
-                            const targetH = MathUtils.lerp(roadH - 0.1, roadH - 0.05, smoothBlend);
-                            // If terrain is higher than target, force it down
-                            h = Math.min(h, targetH);
-
-                            // Color: Gravel/dirt shoulder
-                            finalColor.lerp(gravelColor, 1 - smoothBlend * 0.5);
-                            finalColor.lerp(dirtColor, smoothBlend * 0.3);
-                        }
-                        // Dirt/grass transition zone (12m wide - wider)  
-                        else if (distToRoad < halfWidth + 16) {
-                            const blend = (distToRoad - halfWidth - 4) / 12;
-                            const smoothBlend = blend * blend * (3 - 2 * blend);
-
-                            // Height: Gradual slope from road level to natural terrain
-                            // But NEVER let terrain rise above road level in this zone
-                            const naturalHeight = h;
-                            const blendedH = MathUtils.lerp(roadH - 0.05, naturalHeight, smoothBlend * 0.8 + 0.2);
-                            // Cap height to prevent terrain from rising above road
-                            h = Math.min(blendedH, roadH + (distToRoad - halfWidth) * 0.1);
-
-                            // Color: Transition from dirt to grass
-                            const dirtAmount = 1 - smoothBlend;
-                            finalColor.lerp(dirtColor, dirtAmount * 0.5);
-                        }
-                        // Extended grass transition (20m more - wider)
-                        else if (distToRoad < halfWidth + shoulderWidth) {
-                            const blend = (distToRoad - halfWidth - 16) / 20;
-                            const smoothBlend = blend * blend * (3 - 2 * blend);
-
-                            // Height: Gradual blend to natural terrain
-                            // Allow terrain to rise gradually in this zone
-                            const maxRise = (distToRoad - halfWidth) * 0.15; // Gradual slope limit
-                            const blendedH = MathUtils.lerp(roadH + maxRise * 0.3, h, smoothBlend);
-                            h = Math.min(blendedH, roadH + maxRise);
-
-                            // Color: Subtle dirt tint near road fades out
-                            finalColor.lerp(darkGrassColor, (1 - smoothBlend) * 0.2);
-                        }
-                    }
-                }
+                // ROAD INTEGRATION REMOVED - Flat plain surface
+                // if (roadMask) logic deleted to prevent carving/shoulders
 
                 // Set Z (height) - geometry is rotated so Z is up
                 pos.setZ(i, h);

@@ -1,0 +1,11 @@
+Model Information:
+* title:	Lightning Mcqueen (Cars 3)
+* source:	https://sketchfab.com/3d-models/lightning-mcqueen-cars-3-8ebf1c0a566744209368aee783739cbe
+* author:	DinseyPixarCarsModels (https://sketchfab.com/DinseyPixarCarsModels)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Lightning Mcqueen (Cars 3)" (https://sketchfab.com/3d-models/lightning-mcqueen-cars-3-8ebf1c0a566744209368aee783739cbe) by DinseyPixarCarsModels (https://sketchfab.com/DinseyPixarCarsModels) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)

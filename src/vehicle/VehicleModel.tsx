@@ -1,16 +1,50 @@
-import { useMemo, useRef } from 'react';
+import { useMemo, useRef, Suspense } from 'react';
 import { Group, Shape, ExtrudeGeometry, MeshPhysicalMaterial, Color } from 'three';
-import { useGameStore } from '../stores/gameStore';
+import { useGLTF } from '@react-three/drei';
+import { useGameStore, VEHICLES } from '../stores/gameStore';
 
-export function VehicleModel() {
+export function VehicleModel({ vehicleId }: { vehicleId?: string }) {
     const groupRef = useRef<Group>(null);
-    const selectedVehicle = useGameStore(state => state.selectedVehicle);
+    const storeSelectedVehicle = useGameStore(state => state.selectedVehicle);
+    const textId = vehicleId || storeSelectedVehicle;
+
+    // Find config
+    const config = useMemo(() => VEHICLES.find(v => v.id === textId) || VEHICLES[0], [textId]);
+
+    // --- GLTF Loading ---
+    if (config.type === 'gltf' && config.path) {
+        return (
+            <group ref={groupRef} rotation-y={Math.PI / 2}>
+                {/* Main Shadow Plane */}
+                <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                    <planeGeometry args={[5, 2.4]} />
+                    <meshBasicMaterial
+                        color="#000000"
+                        transparent
+                        opacity={0.3}
+                        depthWrite={false}
+                    />
+                </mesh>
+                <Suspense fallback={null}>
+                    <GLTFVehicle path={config.path} scale={config.scale} rotation={config.rotationOffset} position={config.positionOffset} />
+                </Suspense>
+            </group>
+        );
+    }
+
+    // --- Procedural Fallback (Standard) ---
+    return <ProceduralVehicle id={textId} />;
+}
+
+// Extracted to avoid conditional hooks
+function ProceduralVehicle({ id }: { id: string }) {
+    const groupRef = useRef<Group>(null);
 
     // --- Materials ---
     const materials = useMemo(() => {
         let paintColor = '#1c4bc9'; // Default Blue
 
-        switch (selectedVehicle) {
+        switch (id) {
             case 'sport': paintColor = '#ff3333'; break; // Red
             case 'offroad': paintColor = '#33cc33'; break; // Green
             case 'bus': paintColor = '#ffd000'; break; // Yellow
@@ -75,7 +109,7 @@ export function VehicleModel() {
         });
 
         return { paint, glass, rubber, alloy, blackPlastic, emissionHeadlight, emissionTaillight };
-    }, [selectedVehicle]);
+    }, [id]);
 
     // --- Geometries ---
     const { bodyGeometry, glassGeometry } = useMemo(() => {
@@ -262,4 +296,16 @@ export function VehicleModel() {
 
         </group>
     );
+}
+
+function GLTFVehicle({ path, scale = 1, rotation = [0, 0, 0], position = [0, 0, 0] }: { path: string, scale?: number, rotation?: number[], position?: number[] }) {
+    const { scene } = useGLTF(path);
+    const clonedScene = useMemo(() => scene.clone(), [scene]);
+
+    return <primitive
+        object={clonedScene}
+        scale={scale}
+        rotation={rotation}
+        position={position}
+    />;
 }

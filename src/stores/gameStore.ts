@@ -1,10 +1,61 @@
 import { create } from 'zustand';
 import { Vector3 } from 'three';
 
+export interface VehicleConfig {
+    id: string;
+    name: string;
+    description: string;
+    type: 'procedural' | 'gltf';
+    path?: string; // Path to GLTF/GLB
+    scale?: number;
+    rotationOffset?: [number, number, number];
+    positionOffset?: [number, number, number];
+}
+
+export const VEHICLES: VehicleConfig[] = [
+    {
+        id: 'standard',
+        name: 'Standard EV',
+        description: 'Balanced performance, reliable handling.',
+        type: 'procedural'
+    },
+    {
+        id: 'tokyo_drift',
+        name: 'Drift King',
+        description: '1997 Tokyo Drift Legend. High slip angle.',
+        type: 'gltf',
+        path: '/models/cars/1997_tokyo_drift/scene.gltf',
+        scale: 0.012, // These often come in huge or tiny, need to tune
+        rotationOffset: [0, Math.PI, 0], // GLTFs often face Z+ or Z-, game expects one way
+        positionOffset: [0, -0.5, 0]
+    },
+    {
+        id: 'mcqueen',
+        name: 'Lightning',
+        description: 'Speed. I am speed.',
+        type: 'gltf',
+        path: '/models/cars/lightning_mcqueen_cars_3/scene.gltf',
+        scale: 1.5,
+        rotationOffset: [0, Math.PI, 0],
+        positionOffset: [0, -0.6, 0]
+    },
+    {
+        id: 'mcqueen_black',
+        name: 'Storm',
+        description: 'Next gen speed.',
+        type: 'gltf',
+        path: '/models/cars/mcqueenbalcjkm/scene.gltf',
+        scale: 0.02,
+        rotationOffset: [0, Math.PI, 0],
+        positionOffset: [0, 0, 0]
+    }
+];
+
 interface GameState {
     speed: number;
     distance: number;
     isPaused: boolean;
+    showFps: boolean;
     position: Vector3;
 
     // Free Look Camera State
@@ -20,6 +71,7 @@ interface GameState {
     addDistance: (delta: number) => void;
     setIsPaused: (isPaused: boolean) => void;
     togglePause: () => void;
+    toggleShowFps: () => void;
     setPosition: (position: Vector3) => void;
 
     // Free Look Actions
@@ -49,6 +101,7 @@ export const useGameStore = create<GameState>((set) => ({
     speed: 0,
     distance: 0,
     isPaused: true, // Start paused to show menu
+    showFps: true,
     position: new Vector3(0, 0, 0),
 
     // Free Look Initial State
@@ -67,6 +120,7 @@ export const useGameStore = create<GameState>((set) => ({
     addDistance: (delta) => set((state) => ({ distance: state.distance + delta })),
     setIsPaused: (isPaused) => set({ isPaused }),
     togglePause: () => set((state) => ({ isPaused: !state.isPaused })),
+    toggleShowFps: () => set((state) => ({ showFps: !state.showFps })),
     setPosition: (position) => set({ position }),
 
     // Free Look Actions

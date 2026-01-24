@@ -194,55 +194,5 @@ export function Vegetation({ chunkPosition, noise, count = 150, roadMask }: Vege
 
     }, [chunkPosition, noise, count, roadMask]);
 
-    return (
-        <group position={chunkPosition}>
-            {/* Deciduous Trees - Trunks */}
-            <instancedMesh
-                ref={deciduousTrunkRef}
-                args={[birchTrunkGeometry, birchBarkMaterial, count]}
-                castShadow
-                receiveShadow
-            />
-
-            {/* Deciduous Trees - Golden Foliage */}
-            <instancedMesh
-                ref={goldFoliageRef}
-                args={[birchFoliageGeometry, goldenFoliageMaterial, count]}
-                castShadow
-                receiveShadow
-            />
-
-            {/* Deciduous Trees - Orange Foliage */}
-            <instancedMesh
-                ref={orangeFoliageRef}
-                args={[birchFoliageGeometry, orangeFoliageMaterial, count]}
-                castShadow
-                receiveShadow
-            />
-
-            {/* Deciduous Trees - Red Foliage */}
-            <instancedMesh
-                ref={redFoliageRef}
-                args={[birchFoliageGeometry, redFoliageMaterial, count]}
-                castShadow
-                receiveShadow
-            />
-
-            {/* Pine Trees - Trunks */}
-            <instancedMesh
-                ref={pineTrunkRef}
-                args={[pineTrunkGeometry, pineBarkMaterial, count]}
-                castShadow
-                receiveShadow
-            />
-
-            {/* Pine Trees - Foliage */}
-            <instancedMesh
-                ref={pineFoliageRef}
-                args={[pineFoliageGeometry, pineNeedleMaterial, count]}
-                castShadow
-                receiveShadow
-            />
-        </group>
-    );
+    return null;
 }

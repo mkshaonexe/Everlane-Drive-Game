@@ -254,7 +254,7 @@ export function MiniMap() {
 
     return (
         <div
-            className={`fixed transition-all duration-300 z-[100] ${isExpanded ? 'inset-0 bg-black/80 flex items-center justify-center cursor-pointer' : 'top-24 right-5 w-[200px] h-[200px] cursor-pointer hover:scale-105 play-state-paused:opacity-0'
+            className={`fixed transition-all duration-300 z-[100] ${isExpanded ? 'inset-0 bg-black/80 flex items-center justify-center cursor-pointer' : 'top-8 left-8 w-[200px] h-[200px] cursor-pointer hover:scale-105 play-state-paused:opacity-0'
                 }`}
             onClick={() => setIsExpanded(!isExpanded)}
             onMouseEnter={() => setHovered(true)}

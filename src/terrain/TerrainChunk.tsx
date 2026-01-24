@@ -1,10 +1,10 @@
-import { useLayoutEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { DoubleSide, Mesh } from 'three';
 import * as THREE from 'three';
-import { MathUtils } from 'three';
 import { NoiseGenerator } from './NoiseGenerator';
 import { CHUNK_SIZE } from '../utils/constants';
 import { RoadMask } from '../utils/RoadMask';
+import type { TerrainWorkerInput, TerrainWorkerResponse } from '../workers/workerTypes';
 
 interface TerrainChunkProps {
     position: [number, number, number];
@@ -12,140 +12,130 @@ interface TerrainChunkProps {
     roadMask?: RoadMask;
 }
 
+// Create worker once and reuse
+let terrainWorker: Worker | null = null;
+const pendingChunks = new Map<string, (data: TerrainWorkerResponse) => void>();
+
+function getTerrainWorker(): Worker {
+    if (!terrainWorker) {
+        terrainWorker = new Worker(
+            new URL('../workers/TerrainWorker.ts', import.meta.url),
+            { type: 'module' }
+        );
+
+        terrainWorker.onmessage = (event: MessageEvent<TerrainWorkerResponse>) => {
+            const data = event.data;
+            if (data.type === 'TERRAIN_RESULT' || data.type === 'TERRAIN_ERROR') {
+                const key = `${data.chunkX}_${data.chunkZ}`;
+                const callback = pendingChunks.get(key);
+                if (callback) {
+                    callback(data);
+                    pendingChunks.delete(key);
+                }
+            }
+        };
+    }
+    return terrainWorker;
+}
+
 export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) => {
     const [x, , z] = position;
     const meshRef = useRef<Mesh>(null);
+    const [isReady, setIsReady] = useState(false);
 
     // Resolution of the chunk (vertices per edge)
     const resolution = 128;
 
-    useLayoutEffect(() => {
+    // Request terrain data from worker
+    useEffect(() => {
         const mesh = meshRef.current;
         if (!mesh) return;
 
         const geometry = mesh.geometry;
         if (!geometry) return;
 
-        // Reset generated flag if we are regenerating
-        // Accessing userData type-safely can be annoying in TS, casting to any for convenience here
-        if ((geometry as any).userData?.generated &&
-            (geometry as any).userData.worldX === x &&
-            (geometry as any).userData.worldZ === z) {
+        // Check if already generated for this position
+        const userData = (geometry as any).userData;
+        if (userData?.generated && userData.worldX === x && userData.worldZ === z) {
+            setIsReady(true);
             return;
         }
 
-        const pos = geometry.attributes.position;
-        if (!pos || !pos.count) return;
+        const chunkKey = `${x}_${z}`;
 
-        // Add color attribute if missing
-        if (!geometry.attributes.color) {
-            const colors = new Float32Array(pos.count * 3);
-            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-        }
-        const col = geometry.attributes.color;
+        // Request terrain generation from worker
+        const worker = getTerrainWorker();
 
-        // ============================================
-        // COLOR PALETTE - Natural terrain colors
-        // ============================================
+        const input: TerrainWorkerInput = {
+            type: 'GENERATE_TERRAIN',
+            chunkX: x,
+            chunkZ: z,
+            resolution,
+            chunkSize: CHUNK_SIZE,
+            noiseSeed: 'slow-roads'
+        };
 
-        // Grass colors - lush green variations
-        const darkGrassColor = new THREE.Color('#3a6b2a');   // Deep green grass
-        const lightGrassColor = new THREE.Color('#5a8b4a');  // Medium green grass
-        const yellowGrassColor = new THREE.Color('#8b9b4a'); // Yellow-green grass for hills
+        // Set up callback for when worker responds
+        pendingChunks.set(chunkKey, (response) => {
+            if (response.type === 'TERRAIN_ERROR') {
+                console.warn('Terrain worker error:', response.error);
+                return;
+            }
 
-        // Soil/Dirt colors - brown earth tones
-        const richSoilColor = new THREE.Color('#6b4d33');    // Rich brown soil
-        const dirtColor = new THREE.Color('#8b7355');        // Light brown dirt
-        const sandyDirtColor = new THREE.Color('#a69070');   // Sandy dirt
+            const mesh = meshRef.current;
+            if (!mesh) return;
 
-        // Road shoulder colors
-        const gravelColor = new THREE.Color('#7a7060');      // Gray-brown gravel
-        const roadEdgeDirtColor = new THREE.Color('#5a4a3a'); // Dark dirt near road
+            const geometry = mesh.geometry;
+            if (!geometry) return;
 
-        // Shoulder and transition zone widths - EXPANDED for smoother blending
-        const shoulderWidth = 40; // Total transition zone width in meters (Wider for smoother blend)
+            const pos = geometry.attributes.position;
+            if (!pos || !pos.count) return;
 
-        try {
-            for (let i = 0; i < pos.count; i++) {
-                const lx = pos.getX(i);
-                const ly = pos.getY(i);
+            // Apply heights from worker
+            const heights = response.heights;
+            const colors = response.colors;
 
-                // World coords
-                const wx = x + lx;
-                const wz = z + ly;
+            // Add color attribute if missing
+            if (!geometry.attributes.color) {
+                const colorArray = new Float32Array(pos.count * 3);
+                geometry.setAttribute('color', new THREE.BufferAttribute(colorArray, 3));
+            }
+            const col = geometry.attributes.color;
 
-                // Get base height from noise
-                let h = noise.getHeight(wx, wz);
-
-                // Base grass color with smooth variation
-                const finalColor = darkGrassColor.clone();
-
-                // Multi-octave noise for smooth, natural color variation
-                const n1 = noise.getNoise(wx * 0.015, wz * 0.015, 0.1); // Large scale variation
-                const n2 = noise.getNoise(wx * 0.06, wz * 0.06, 0.1);   // Medium detail
-                const n3 = noise.getNoise(wx * 0.12, wz * 0.12, 0.1);   // Fine detail
-                const combinedNoise = n1 * 0.5 + n2 * 0.35 + n3 * 0.15;
-
-                // Blend from dark grass to light grass based on noise
-                finalColor.lerp(lightGrassColor, combinedNoise * 0.6 + 0.2);
-
-                // Add yellow/dry grass on higher elevations
-                const heightFactor = Math.min(1, Math.max(0, (h - 8) / 25));
-                const yellowBlend = heightFactor * 0.35 + combinedNoise * 0.15;
-                finalColor.lerp(yellowGrassColor, yellowBlend);
-
-                // ============================================
-                // DIRT/SOIL PATCHES - Natural earth exposure
-                // ============================================
-
-                // Random dirt patches based on noise (simulating bare earth)
-                const dirtNoise = noise.getNoise(wx * 0.08, wz * 0.08, 0.3);
-                const dirtNoise2 = noise.getNoise(wx * 0.2, wz * 0.2, 0.5);
-                const combinedDirt = dirtNoise * 0.7 + dirtNoise2 * 0.3;
-
-                if (combinedDirt > 0.55) {
-                    // Exposed soil/dirt patches
-                    const dirtBlend = (combinedDirt - 0.55) * 2.0; // 0 to ~0.9
-                    finalColor.lerp(richSoilColor, dirtBlend * 0.6);
-                }
-
-                // Sandy/dry dirt in low areas
-                const lowAreaNoise = noise.getNoise(wx * 0.05, wz * 0.05, 0.2);
-                if (h < 3 && lowAreaNoise > 0.4) {
-                    const sandBlend = (1 - h / 3) * (lowAreaNoise - 0.4) * 2;
-                    finalColor.lerp(sandyDirtColor, sandBlend * 0.4);
-                }
-
-                // ============================================
-                // ROAD INTEGRATION - Smooth terrain blending
-                // ============================================
-
-                // ROAD INTEGRATION REMOVED - Flat plain surface
-                // if (roadMask) logic deleted to prevent carving/shoulders
-
+            // Apply worker results to geometry
+            // Note: PlaneGeometry vertex order may differ, need to map correctly
+            for (let i = 0; i < pos.count && i < heights.length; i++) {
                 // Set Z (height) - geometry is rotated so Z is up
-                pos.setZ(i, h);
+                pos.setZ(i, heights[i]);
 
-                // Set Color
-                col.setXYZ(i, finalColor.r, finalColor.g, finalColor.b);
+                // Set color
+                if (i * 3 + 2 < colors.length) {
+                    col.setXYZ(i, colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
+                }
             }
 
             pos.needsUpdate = true;
             col.needsUpdate = true;
             geometry.computeVertexNormals();
 
-            // Mark as generated with metadata
+            // Mark as generated
             (geometry as any).userData = {
                 generated: true,
                 worldX: x,
                 worldZ: z
             };
 
-        } catch (e) {
-            console.warn("Error generating chunk mesh:", e);
-        }
+            setIsReady(true);
+        });
 
-    }, [x, z, noise, roadMask, resolution]);
+        // Post message to worker
+        worker.postMessage(input);
+
+        // Cleanup on unmount
+        return () => {
+            pendingChunks.delete(chunkKey);
+        };
+    }, [x, z, resolution]);
 
     return (
         <group position={position}>

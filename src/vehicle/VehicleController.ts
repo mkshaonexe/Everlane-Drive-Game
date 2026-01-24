@@ -8,6 +8,7 @@ export interface InputState {
     right: boolean;
     brake: boolean;
     reset: boolean;
+    boost: boolean;
 }
 
 export class VehicleController {
@@ -18,6 +19,7 @@ export class VehicleController {
         right: false,
         brake: false,
         reset: false,
+        boost: false,
     };
 
     // Free look mouse sensitivity
@@ -54,6 +56,10 @@ export class VehicleController {
             case 'KeyR':
                 this.input.reset = true;
                 break;
+            case 'ShiftLeft':
+            case 'ShiftRight':
+                this.input.boost = true;
+                break;
         }
     };
 
@@ -80,6 +86,10 @@ export class VehicleController {
                 break;
             case 'KeyR':
                 this.input.reset = false;
+                break;
+            case 'ShiftLeft':
+            case 'ShiftRight':
+                this.input.boost = false;
                 break;
         }
     };

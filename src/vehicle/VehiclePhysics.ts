@@ -8,11 +8,28 @@ export class VehiclePhysics {
     public velocity: Vector3 = new Vector3();
     public angularVelocity: Vector3 = new Vector3();
 
-    // Physics parameters
+    // Physics parameters - REALISTIC DRIVING MODEL
     private speed: number = 0;
-    private maxSpeed: number = 60; // m/s
-    private acceleration: number = 20; // m/s^2
-    private braking: number = 30; // m/s^2
+
+    // Speed limits (m/s) - 60 m/s = 216 km/h
+    private normalMaxSpeed: number = 35;    // ~126 km/h for normal driving
+    private turboMaxSpeed: number = 60;     // ~216 km/h for turbo (W+Shift)
+    private reverseMaxSpeed: number = 20;   // ~72 km/h reverse
+
+    // Acceleration (m/s²) - realistic based on real cars
+    private normalAcceleration: number = 5;   // Normal W - gradual (0-100 in ~5.5 seconds)
+    private turboAcceleration: number = 25;   // W+Shift - fast (0-100 in ~1.1 seconds)
+    private reverseAcceleration: number = 8;  // Reverse speed
+
+    // Deceleration & Resistance
+    private engineBraking: number = 3;        // m/s² when releasing throttle (gear resistance)
+    private airDragCoefficient: number = 0.0015; // Quadratic air resistance
+    private rollingResistance: number = 0.5;  // Constant rolling friction
+
+    // Braking
+    private brakeStrength: number = 40;       // m/s² for S key braking at high speed
+    private handbrakeStrength: number = 60;   // m/s² for Space key emergency stop
+
     private turnSpeed: number = 2.0;
 
     // Suspension Parameters
@@ -121,53 +138,97 @@ export class VehiclePhysics {
         this.onGround = isCurrentlyGrounded;
         this.isOnRoad = roadHits > 0;
 
-
         // --- 2. Surface Physics & Input ---
 
-        let currentFriction = this.onGround ? (this.isOnRoad ? 2.0 : 1.0) : 0.1; // Ground vs Air friction
         let speedMultiplier = 1.0;
         let turnMultiplier = 1.0;
 
         if (this.onGround && !this.isOnRoad) {
             // OFF-ROAD PENALTIES
             speedMultiplier = 0.60; // Max 60% speed
-            currentFriction = 3.0;  // High rolling resistance (mud/grass)
             turnMultiplier = 0.75;  // Understeer
         }
 
-        // Throttle
-        let throttle = 0;
-        if (input.forward) throttle += 1;
-        if (input.backward) throttle -= 0.5;
+        // ============================================
+        // REALISTIC THROTTLE & ACCELERATION
+        // ============================================
 
-        if (throttle !== 0 && this.onGround) {
-            const acc = throttle > 0 ? this.acceleration : this.acceleration * 0.5;
-            this.speed += throttle * acc * delta;
-        } else {
-            // Friction / Drag
-            if (this.onGround) {
-                // Apply strong rolling resistance if no throttle
-                this.speed -= this.speed * currentFriction * delta;
-            } else {
-                // Air drag
-                this.speed *= 0.995;
+        // Determine max speed and acceleration based on boost (Shift) state
+        const isTurbo = input.boost && input.forward;
+        const currentMaxSpeed = isTurbo ? this.turboMaxSpeed : this.normalMaxSpeed;
+        const currentAcceleration = isTurbo ? this.turboAcceleration : this.normalAcceleration;
+
+        if (input.forward && this.onGround) {
+            // FORWARD ACCELERATION (W or W+Shift)
+            // Apply acceleration with diminishing returns at higher speeds (simulates gear resistance)
+            const speedRatio = Math.abs(this.speed) / currentMaxSpeed;
+            const accelerationFactor = isTurbo ? 1.0 : (1.0 - speedRatio * 0.7); // Turbo maintains full power
+            const effectiveAcc = currentAcceleration * Math.max(0.3, accelerationFactor);
+
+            this.speed += effectiveAcc * delta;
+
+        } else if (input.backward && this.onGround) {
+            // S KEY: BRAKE or REVERSE
+            if (this.speed > 1) {
+                // HIGH SPEED: Apply strong braking force to slow down quickly
+                const brakeForce = this.brakeStrength * delta;
+                this.speed = Math.max(0, this.speed - brakeForce);
+            } else if (this.speed > -this.reverseMaxSpeed) {
+                // LOW/STOPPED: Transition to reverse
+                this.speed -= this.reverseAcceleration * delta;
+            }
+
+        } else if (!input.forward && !input.backward && this.onGround) {
+            // NO THROTTLE: Realistic deceleration (coasting)
+            // Apply engine braking (gear resistance)
+            const engineBrakeForce = this.engineBraking * delta;
+
+            // Apply air drag (quadratic - stronger at high speeds)
+            const airDragForce = this.airDragCoefficient * this.speed * Math.abs(this.speed) * delta;
+
+            // Apply rolling resistance (constant)
+            const rollingForce = this.rollingResistance * delta * Math.sign(this.speed);
+
+            // Total deceleration
+            if (this.speed > 0) {
+                this.speed -= engineBrakeForce + airDragForce + Math.abs(rollingForce);
+                this.speed = Math.max(0, this.speed);
+            } else if (this.speed < 0) {
+                this.speed += engineBrakeForce + Math.abs(airDragForce) + Math.abs(rollingForce);
+                this.speed = Math.min(0, this.speed);
             }
         }
 
-        // Braking
-        if (input.brake && this.onGround) {
-            const brakePower = this.braking * delta;
-            if (this.speed > 0) this.speed = Math.max(0, this.speed - brakePower);
-            else if (this.speed < 0) this.speed = Math.min(0, this.speed + brakePower);
+        // Air resistance when not on ground
+        if (!this.onGround) {
+            this.speed *= 0.998;
         }
 
-        // Speed Limits
-        const maxS = this.maxSpeed * speedMultiplier;
-        this.speed = clamp(this.speed, -maxS / 3, maxS);
+        // ============================================
+        // HANDBRAKE (Space) - Emergency stop
+        // ============================================
+        if (input.brake && this.onGround) {
+            const handbrakeForce = this.handbrakeStrength * delta;
+            if (this.speed > 0) {
+                this.speed = Math.max(0, this.speed - handbrakeForce);
+            } else if (this.speed < 0) {
+                this.speed = Math.min(0, this.speed + handbrakeForce);
+            }
+        }
+
+        // ============================================
+        // SPEED LIMITS
+        // ============================================
+        const maxS = currentMaxSpeed * speedMultiplier;
+        const minS = -this.reverseMaxSpeed * speedMultiplier;
+        this.speed = clamp(this.speed, minS, maxS);
 
         // Stop completely if very slow and no input
-        if (Math.abs(this.speed) < 0.1 && throttle === 0 && this.onGround) {
-            this.speed = 0;
+        if (Math.abs(this.speed) < 0.5 && !input.forward && !input.backward && this.onGround) {
+            this.speed *= 0.9; // Gradual stop
+            if (Math.abs(this.speed) < 0.1) {
+                this.speed = 0;
+            }
         }
 
         // --- 3. Steering & Orientation ---
@@ -180,7 +241,7 @@ export class VehiclePhysics {
             if (input.right) steer -= 1;
 
             const dir = Math.sign(this.speed);
-            const turnStrength = this.turnSpeed * turnMultiplier * (1.0 - Math.abs(this.speed) / (this.maxSpeed * 2));
+            const turnStrength = this.turnSpeed * turnMultiplier * (1.0 - Math.abs(this.speed) / (this.turboMaxSpeed * 2));
             const rotationAmount = steer * turnStrength * delta * dir;
 
             const rotQuat = new Quaternion().setFromAxisAngle(this.up, rotationAmount);

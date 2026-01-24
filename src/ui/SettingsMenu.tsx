@@ -1,5 +1,8 @@
 import { useGameStore, VEHICLES } from '../stores/gameStore';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, Suspense } from 'react';
+import { Canvas } from '@react-three/fiber';
+import { Stage, OrbitControls } from '@react-three/drei';
+import { VehicleModel } from '../vehicle/VehicleModel';
 
 type Tab = 'graphics' | 'vehicle' | 'audio' | 'general';
 
@@ -91,36 +94,52 @@ export function SettingsMenu({ onClose }: { onClose: () => void }) {
                             </div>
                         )}
 
-                        {/* VEHICLE TAB */}
                         {activeTab === 'vehicle' && (
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {VEHICLES.map(v => (
-                                    <button
-                                        key={v.id}
-                                        onClick={() => setSelectedVehicle(v.id)}
-                                        className={`group relative p-6 rounded-2xl border transition-all text-left overflow-hidden ${selectedVehicle === v.id
-                                            ? 'bg-indigo-900/20 border-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.15)] scale-[1.02]'
-                                            : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
-                                            }`}
-                                    >
-                                        <div className="relative z-10">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className={`font-bold text-xl transition-colors ${selectedVehicle === v.id ? 'text-indigo-400' : 'text-white'}`}>
-                                                    {v.name}
+                            <div className="space-y-6">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {VEHICLES.map(v => (
+                                        <button
+                                            key={v.id}
+                                            onClick={() => setSelectedVehicle(v.id)}
+                                            className={`group relative p-6 rounded-2xl border transition-all text-left overflow-hidden ${selectedVehicle === v.id
+                                                ? 'bg-indigo-900/20 border-indigo-500/50 shadow-[0_0_30px_rgba(99,102,241,0.15)] scale-[1.02]'
+                                                : 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                                                }`}
+                                        >
+                                            <div className="relative z-10">
+                                                <div className="flex justify-between items-start mb-2">
+                                                    <div className={`font-bold text-xl transition-colors ${selectedVehicle === v.id ? 'text-indigo-400' : 'text-white'}`}>
+                                                        {v.name}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        {selectedVehicle === v.id && (
+                                                            <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Active</span>
+                                                        )}
+                                                        {v.type === 'gltf' && (
+                                                            <span className="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-purple-500/30">3D Model</span>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                                <div className="flex gap-2">
-                                                    {selectedVehicle === v.id && (
-                                                        <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Active</span>
-                                                    )}
-                                                    {v.type === 'gltf' && (
-                                                        <span className="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-purple-500/30">3D Model</span>
-                                                    )}
-                                                </div>
+                                                <p className="text-white/50 text-sm">{v.description}</p>
                                             </div>
-                                            <p className="text-white/50 text-sm">{v.description}</p>
-                                        </div>
-                                    </button>
-                                ))}
+                                        </button>
+                                    ))}
+                                </div>
+
+                                {/* 3D Preview Section */}
+                                <div className="h-[300px] w-full bg-black/40 rounded-2xl border border-white/10 overflow-hidden relative group">
+                                    <div className="absolute top-4 left-4 z-10 bg-black/50 backdrop-blur px-3 py-1 rounded-full border border-white/10">
+                                        <span className="text-xs font-bold text-white/70 uppercase tracking-widest">Preview</span>
+                                    </div>
+                                    <Canvas shadows dpr={[1, 2]} camera={{ position: [4, 2, 4], fov: 45 }}>
+                                        <Suspense fallback={null}>
+                                            <Stage environment="city" intensity={0.5} contactShadow={{ opacity: 0.5, blur: 2 }}>
+                                                <VehicleModel vehicleId={selectedVehicle} />
+                                            </Stage>
+                                            <OrbitControls autoRotate autoRotateSpeed={2} enableZoom={false} enablePan={false} minPolarAngle={0} maxPolarAngle={Math.PI / 2} />
+                                        </Suspense>
+                                    </Canvas>
+                                </div>
                             </div>
                         )}
 

@@ -1,7 +1,34 @@
-import { useMemo, useRef, Suspense } from 'react';
+import { useMemo, useRef, Suspense, Component } from 'react';
+import type { ErrorInfo, ReactNode } from 'react';
 import { Group, Shape, ExtrudeGeometry, MeshPhysicalMaterial, Color } from 'three';
 import { useGLTF } from '@react-three/drei';
 import { useGameStore, VEHICLES } from '../stores/gameStore';
+
+// Error Boundary for Vehicle Loading
+class VehicleErrorBoundary extends Component<
+    { children: ReactNode; fallback: ReactNode },
+    { hasError: boolean }
+> {
+    constructor(props: { children: ReactNode; fallback: ReactNode }) {
+        super(props);
+        this.state = { hasError: false };
+    }
+
+    static getDerivedStateFromError(_: Error) {
+        return { hasError: true };
+    }
+
+    componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+        console.error('Vehicle loading error:', error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return this.props.fallback;
+        }
+        return this.props.children;
+    }
+}
 
 export function VehicleModel({ vehicleId }: { vehicleId?: string }) {
     const groupRef = useRef<Group>(null);
@@ -25,15 +52,32 @@ export function VehicleModel({ vehicleId }: { vehicleId?: string }) {
                         depthWrite={false}
                     />
                 </mesh>
-                <Suspense fallback={null}>
-                    <GLTFVehicle path={config.path} scale={config.scale} rotation={config.rotationOffset} position={config.positionOffset} />
-                </Suspense>
+                <VehicleErrorBoundary fallback={<ProceduralVehicle id="standard" />}>
+                    <Suspense fallback={<LoadingPlaceholder />}>
+                        <GLTFVehicle
+                            path={config.path}
+                            scale={config.scale}
+                            rotation={config.rotationOffset}
+                            position={config.positionOffset}
+                        />
+                    </Suspense>
+                </VehicleErrorBoundary>
             </group>
         );
     }
 
     // --- Procedural Fallback (Standard) ---
     return <ProceduralVehicle id={textId} />;
+}
+
+// Loading placeholder while GLTF is being fetched
+function LoadingPlaceholder() {
+    return (
+        <mesh>
+            <boxGeometry args={[2, 1, 4]} />
+            <meshStandardMaterial color="#444444" wireframe />
+        </mesh>
+    );
 }
 
 // Extracted to avoid conditional hooks

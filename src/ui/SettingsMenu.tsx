@@ -1,4 +1,4 @@
-import { useGameStore } from '../stores/gameStore';
+import { useGameStore, VEHICLES } from '../stores/gameStore';
 import { useEffect, useState } from 'react';
 
 type Tab = 'graphics' | 'vehicle' | 'audio' | 'general';
@@ -21,13 +21,6 @@ export function SettingsMenu({ onClose }: { onClose: () => void }) {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [onClose]);
-
-    const vehicles = [
-        { id: 'standard', name: 'Standard EV', desc: 'Balanced performance' },
-        { id: 'sport', name: 'Sport GT', desc: 'High speed, loose rear' },
-        { id: 'offroad', name: 'Offroad 4x4', desc: 'High suspension, max grip' },
-        { id: 'bus', name: 'City Bus', desc: 'Heavy, slow, driftable' },
-    ];
 
     const tabs: { id: Tab; label: string; icon: string }[] = [
         { id: 'graphics', label: 'Graphics', icon: '🎨' },
@@ -101,7 +94,7 @@ export function SettingsMenu({ onClose }: { onClose: () => void }) {
                         {/* VEHICLE TAB */}
                         {activeTab === 'vehicle' && (
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {vehicles.map(v => (
+                                {VEHICLES.map(v => (
                                     <button
                                         key={v.id}
                                         onClick={() => setSelectedVehicle(v.id)}
@@ -115,11 +108,16 @@ export function SettingsMenu({ onClose }: { onClose: () => void }) {
                                                 <div className={`font-bold text-xl transition-colors ${selectedVehicle === v.id ? 'text-indigo-400' : 'text-white'}`}>
                                                     {v.name}
                                                 </div>
-                                                {selectedVehicle === v.id && (
-                                                    <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Active</span>
-                                                )}
+                                                <div className="flex gap-2">
+                                                    {selectedVehicle === v.id && (
+                                                        <span className="bg-indigo-500 text-white text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider">Active</span>
+                                                    )}
+                                                    {v.type === 'gltf' && (
+                                                        <span className="bg-purple-500/20 text-purple-300 text-[10px] font-bold px-2 py-1 rounded uppercase tracking-wider border border-purple-500/30">3D Model</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <p className="text-white/50 text-sm">{v.desc}</p>
+                                            <p className="text-white/50 text-sm">{v.description}</p>
                                         </div>
                                     </button>
                                 ))}

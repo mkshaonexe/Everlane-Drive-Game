@@ -155,6 +155,6 @@ export const useGameStore = create<GameState>((set) => ({
     setMute: (muted: boolean) => set({ isMuted: muted }),
 
     // Vehicle Selection
-    selectedVehicle: 'standard', // 'standard', 'sport', 'offroad'
+    selectedVehicle: 'mcqueen', // Default to Lightning
     setSelectedVehicle: (id: string) => set({ selectedVehicle: id }),
 }));

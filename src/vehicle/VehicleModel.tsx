@@ -67,7 +67,15 @@ export function VehicleModel({ vehicleId }: { vehicleId?: string }) {
     }
 
     // --- Procedural Fallback (Standard) ---
-    return <ProceduralVehicle id={textId} />;
+    return (
+        <group
+            rotation={config.rotationOffset}
+            position={config.positionOffset}
+            scale={config.scale}
+        >
+            <ProceduralVehicle id={textId} />
+        </group>
+    );
 }
 
 // Loading placeholder while GLTF is being fetched

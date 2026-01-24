@@ -17,7 +17,8 @@ export const VEHICLES: VehicleConfig[] = [
         id: 'standard',
         name: 'Standard EV',
         description: 'Balanced performance, reliable handling.',
-        type: 'procedural'
+        type: 'procedural',
+        positionOffset: [0, -0.2, 0] // Fix floating
     },
     {
         id: 'tokyo_drift',
@@ -27,7 +28,7 @@ export const VEHICLES: VehicleConfig[] = [
         path: '/models/cars/1997_tokyo_drift/scene.gltf',
         scale: 120, // Model has 0.01 internal scale, so 1.2 -> 120
         rotationOffset: [0, 0, 0], // Face forward direction
-        positionOffset: [0, 0.3, 0] // Lift slightly for proper ground placement
+        positionOffset: [0, -0.1, 0] // Lower to reduce gap
     },
     {
         id: 'mcqueen',
@@ -47,7 +48,7 @@ export const VEHICLES: VehicleConfig[] = [
         path: '/models/cars/mcqueenbalcjkm/scene.gltf',
         scale: 1.5, // Reduced from 80 to 1.5 based on user feedback
         rotationOffset: [0, 0, 0], // Face forward direction  
-        positionOffset: [0, 1.2, 0] // Lift to sit on road (model origin is below ground)
+        positionOffset: [0, -0.6, 0] // Same as Lightning
     }
 ];
 

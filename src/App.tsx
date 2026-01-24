@@ -16,7 +16,7 @@ function App() {
         {/* UI Overlay Layer - pointer-events-none to allow canvas interaction */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-0 left-0 p-4 text-white font-bold select-none drop-shadow-md z-10 opacity-50">
-            Slow Roads Recreation
+            Everlane Drive
           </div>
 
           {/* UI Layer */}

@@ -131,6 +131,7 @@ self.onmessage = (event: MessageEvent<TerrainWorkerInput>) => {
         try {
             const result = generateTerrainData(input);
             // Transfer the Float32Arrays for zero-copy performance
+            // @ts-ignore - Worker type issue
             self.postMessage(result, [result.heights.buffer, result.colors.buffer]);
         } catch (error) {
             const errorResponse: TerrainWorkerError = {

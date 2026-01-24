@@ -14,7 +14,7 @@ export class NoiseGenerator {
     /**
      * Fractal Brownian Motion (FBM) noise
      */
-    getHeight(x: number, z: number): number {
+    getHeight(_x: number, _z: number): number {
         // FLAT WORLD - Always return 0
         return 0;
     }

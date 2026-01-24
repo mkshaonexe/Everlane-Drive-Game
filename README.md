@@ -1,6 +1,6 @@
-# Slow Roads Recreation
-
-A high-fidelity recreation of the browser-based 3D driving game [slowroads.io](https://slowroads.io), built with **React**, **Three.js (React Three Fiber)**, and **TypeScript**.
+# Everlane Drive
+ 
+A high-fidelity browser-based 3D driving game, **Everlane Drive**, built with **React**, **Three.js (React Three Fiber)**, and **TypeScript**.
 
 ![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
 ![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)

@@ -138,7 +138,7 @@ export function SettingsMenu({ onClose }: { onClose: () => void }) {
                                                 <LoadingSpinner />
                                             </Html>
                                         }>
-                                            <Stage environment="city" intensity={0.5} contactShadow={{ opacity: 0.5, blur: 2 }}>
+                                            <Stage environment="city" intensity={0.5}>
                                                 <VehicleModel vehicleId={selectedVehicle} />
                                             </Stage>
                                             <OrbitControls autoRotate autoRotateSpeed={0.5} enableZoom={false} enablePan={false} minPolarAngle={0} maxPolarAngle={Math.PI / 2} />

@@ -104,7 +104,7 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
             lastDirection: roadStateRef.current.lastDirection,
             allPoints: roadStateRef.current.allPoints,
             additionalLength,
-            noiseSeed: 'slow-roads'
+            noiseSeed: 'everlane-drive'
         };
 
         roadWorkerCallback = (response) => {

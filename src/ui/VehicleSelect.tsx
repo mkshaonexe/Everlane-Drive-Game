@@ -108,7 +108,7 @@ export function VehicleSelect({ onBack }: { onBack: () => void }) {
                             </div>
                         }>
                             <Canvas shadows dpr={[1, 2]} camera={{ position: [4, 2, 4], fov: 45 }}>
-                                <Stage environment="city" intensity={0.5} contactShadow={{ opacity: 0.5, blur: 2 }}>
+                                <Stage environment="city" intensity={0.5}>
                                     <VehicleModel vehicleId={previewVehicleId} />
                                 </Stage>
                                 <OrbitControls

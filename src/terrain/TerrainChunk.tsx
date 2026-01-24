@@ -38,10 +38,11 @@ function getTerrainWorker(): Worker {
     return terrainWorker;
 }
 
-export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) => {
+// @ts-ignore
+export const TerrainChunk = ({ position, noise: _noise, roadMask: _roadMask }: TerrainChunkProps) => {
     const [x, , z] = position;
     const meshRef = useRef<Mesh>(null);
-    const [isReady, setIsReady] = useState(false);
+    const [_isReady, setIsReady] = useState(false);
 
     // Resolution of the chunk (vertices per edge)
     const resolution = 128;
@@ -72,7 +73,7 @@ export const TerrainChunk = ({ position, noise, roadMask }: TerrainChunkProps) =
             chunkZ: z,
             resolution,
             chunkSize: CHUNK_SIZE,
-            noiseSeed: 'slow-roads'
+            noiseSeed: 'everlane-drive'
         };
 
         // Set up callback for when worker responds

@@ -3,16 +3,16 @@ import { InstancedMesh, Object3D, Vector3 } from 'three';
 import { NoiseGenerator } from '../terrain/NoiseGenerator';
 import { RoadMask } from '../utils/RoadMask';
 import {
-    birchTrunkGeometry,
-    birchFoliageGeometry,
-    birchBarkMaterial,
-    goldenFoliageMaterial,
-    orangeFoliageMaterial,
-    redFoliageMaterial,
-    pineTrunkGeometry,
-    pineFoliageGeometry,
-    pineBarkMaterial,
-    pineNeedleMaterial,
+    // birchTrunkGeometry,
+    // birchFoliageGeometry,
+    // birchBarkMaterial,
+    // goldenFoliageMaterial,
+    // orangeFoliageMaterial,
+    // redFoliageMaterial,
+    // pineTrunkGeometry,
+    // pineFoliageGeometry,
+    // pineBarkMaterial,
+    // pineNeedleMaterial,
 } from './TreeModels';
 
 interface VegetationProps {

@@ -235,17 +235,31 @@ export function MiniMap() {
             ctx.textAlign = 'left';
             ctx.fillText("= Your Position", 55, height - 55);
         }
-
     }, [position, roadPath, isExpanded]);
+
+    // Keyboard "M" listener
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'm' || e.key === 'M') {
+                setIsExpanded(prev => !prev);
+            }
+            if (isExpanded && e.key === 'Escape') {
+                setIsExpanded(false);
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [isExpanded]);
 
     return (
         <div
-            className={`fixed transition-all duration-300 z-40 ${isExpanded ? 'inset-0 bg-black/80 flex items-center justify-center cursor-pointer' : 'top-8 left-8 w-[200px] h-[200px] cursor-pointer hover:scale-105'
+            className={`fixed transition-all duration-300 z-[100] ${isExpanded ? 'inset-0 bg-black/80 flex items-center justify-center cursor-pointer' : 'top-8 left-8 w-[200px] h-[200px] cursor-pointer hover:scale-105'
                 }`}
             onClick={() => setIsExpanded(!isExpanded)}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            title={isExpanded ? "Click to close map" : "Click to view full map"}
+            title={isExpanded ? "Click to close map" : "Click to view full map (or press M)"}
         >
             <canvas
                 ref={canvasRef}
@@ -255,7 +269,7 @@ export function MiniMap() {
             {/* MiniMap Expand hint */}
             {!isExpanded && (
                 <div className={`absolute -bottom-6 w-full text-center text-xs font-bold uppercase tracking-widest transition-colors ${hovered ? 'text-white' : 'text-white/70'}`}>
-                    {hovered ? "Open Map" : "Map"}
+                    {hovered ? "Open Map (M)" : "Map"}
                 </div>
             )}
             {/* Visible Close Button overlay for expanded mode */}

@@ -1,4 +1,5 @@
 import { AudioManager } from './AudioManager';
+import { useGameStore } from '../stores/gameStore';
 
 export class EngineAudio {
     private oscillator: OscillatorNode | null = null;
@@ -55,6 +56,17 @@ export class EngineAudio {
 
     update(speed: number) {
         if (!this.isRunning || !this.oscillator || !this.gainNode) return;
+
+        // Check global mute state
+        // Note: Ideally we subscribe to store, but since this Class is managed inside React component (Vehicle) 
+        // we can pass mute state or check it here if we import store.
+        // Direct store access is easiest for this class structure.
+        const { isMuted } = useGameStore.getState();
+
+        if (isMuted) {
+            this.gainNode.gain.setTargetAtTime(0, this.audioManager.context.currentTime, 0.1);
+            return;
+        }
 
         // Map speed to RPM/Pitch
         // Speed 0 -> 80Hz

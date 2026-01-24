@@ -1,11 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useGameStore } from '../stores/gameStore';
 import { FreeLookButton } from './FreeLookButton';
 import { MiniMap } from './MiniMap';
+import { SettingsMenu } from './SettingsMenu';
 
 export function HUD() {
     const speed = useGameStore(state => state.speed);
     const distance = useGameStore(state => state.distance);
+    const isMuted = useGameStore(state => state.isMuted);
+    const toggleMute = useGameStore(state => state.toggleMute);
+
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
     // FPS Counter Logic
     const fpsRef = React.useRef<HTMLDivElement>(null);
@@ -42,6 +47,31 @@ export function HUD() {
 
     return (
         <>
+            {/* Top Right Controls */}
+            <div className="absolute top-4 right-4 flex items-center gap-3 z-50 pointer-events-auto">
+                <button
+                    onClick={toggleMute}
+                    className={`w-10 h-10 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all hover:scale-110 shadow-lg ${isMuted ? 'bg-red-500/50 text-white' : 'bg-black/40 text-white/80 hover:bg-black/60'
+                        }`}
+                    title={isMuted ? "Unmute Audio" : "Mute Audio"}
+                >
+                    {isMuted ? '🔇' : '🔊'}
+                </button>
+
+                <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="w-10 h-10 rounded-full bg-black/40 hover:bg-black/60 backdrop-blur-md border border-white/20 flex items-center justify-center text-white/80 hover:text-white transition-all hover:scale-110 shadow-lg"
+                    title="Open Settings"
+                >
+                    <span className="text-xl">⚙️</span>
+                </button>
+            </div>
+
+            {/* Settings Menu Modal */}
+            {isSettingsOpen && (
+                <SettingsMenu onClose={() => setIsSettingsOpen(false)} />
+            )}
+
             {/* Free Look Button */}
             <FreeLookButton />
 

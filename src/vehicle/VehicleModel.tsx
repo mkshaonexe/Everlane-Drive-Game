@@ -1,157 +1,265 @@
 import { useMemo, useRef } from 'react';
-import { Group, Shape, ExtrudeGeometry } from 'three';
+import { Group, Shape, ExtrudeGeometry, MeshPhysicalMaterial, Color } from 'three';
+import { useGameStore } from '../stores/gameStore';
 
 export function VehicleModel() {
     const groupRef = useRef<Group>(null);
+    const selectedVehicle = useGameStore(state => state.selectedVehicle);
 
-    // Create the aerodynamic side profile of the car
+    // --- Materials ---
+    const materials = useMemo(() => {
+        let paintColor = '#1c4bc9'; // Default Blue
+
+        switch (selectedVehicle) {
+            case 'sport': paintColor = '#ff3333'; break; // Red
+            case 'offroad': paintColor = '#33cc33'; break; // Green
+            case 'bus': paintColor = '#ffd000'; break; // Yellow
+            default: paintColor = '#1c4bc9';
+        }
+
+        const paint = new MeshPhysicalMaterial({
+            color: new Color(paintColor),
+            metalness: 0.6,
+            roughness: 0.2,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.03,
+            reflectivity: 1.0,
+            envMapIntensity: 2.0
+        });
+
+        const glass = new MeshPhysicalMaterial({
+            color: new Color('#111111'),
+            metalness: 0.9,
+            roughness: 0.05,
+            transmission: 0.2, // Slight transparency
+            thickness: 0.5,
+            envMapIntensity: 3.0,
+            transparent: true,
+            opacity: 0.7
+        });
+
+        const rubber = new MeshPhysicalMaterial({
+            color: new Color('#1a1a1a'),
+            roughness: 0.9,
+            metalness: 0.1,
+            clearcoat: 0.0,
+            envMapIntensity: 0.2
+        });
+
+        const alloy = new MeshPhysicalMaterial({
+            color: new Color('#eeeeee'),
+            metalness: 0.9,
+            roughness: 0.2,
+            clearcoat: 0.5,
+            envMapIntensity: 2.0
+        });
+
+        const blackPlastic = new MeshPhysicalMaterial({
+            color: new Color('#111111'),
+            roughness: 0.6,
+            metalness: 0.3
+        });
+
+        const emissionHeadlight = new MeshPhysicalMaterial({
+            color: new Color('#ccffff'),
+            emissive: new Color('#ccffff'),
+            emissiveIntensity: 10,
+            toneMapped: false
+        });
+
+        const emissionTaillight = new MeshPhysicalMaterial({
+            color: new Color('#ff0000'),
+            emissive: new Color('#ff0000'),
+            emissiveIntensity: 5,
+            toneMapped: false
+        });
+
+        return { paint, glass, rubber, alloy, blackPlastic, emissionHeadlight, emissionTaillight };
+    }, [selectedVehicle]);
+
+    // --- Geometries ---
     const { bodyGeometry, glassGeometry } = useMemo(() => {
-        // Car Body Shape (Side profile facing +X)
-        const bodyShape = new Shape();
-        bodyShape.moveTo(2.2, 0.5); // Nose bottom
-        bodyShape.lineTo(2.3, 0.8); // Nose tip
-        bodyShape.lineTo(1.2, 1.0); // Hood start
-        bodyShape.lineTo(0.5, 1.35); // Windshield base
-        bodyShape.lineTo(-0.8, 1.4); // Roof peak
-        bodyShape.lineTo(-1.6, 1.25); // Rear window top
-        bodyShape.lineTo(-2.0, 0.9); // Trunk deck
-        bodyShape.lineTo(-2.1, 0.6); // Rear bumper top
-        bodyShape.lineTo(-2.0, 0.4); // Rear bumper bottom
-        bodyShape.lineTo(2.0, 0.4); // Chassis bottom
-        bodyShape.quadraticCurveTo(2.1, 0.4, 2.2, 0.5); // Smooth nose curve
 
-        // Extrude settings for the main body
-        const extrudeSettings = {
+        // 1. Main Body Shape
+        // Defined in X/Y plane. Facing +X.
+        // Y=0 is ground level in Shape coords to match mesh position.
+        // Let's use: Y=0.4 is bottom of chassis. 
+        const chassisY = 0.4;
+
+        const bodyShape = new Shape();
+        bodyShape.moveTo(2.3, chassisY);        // Front Bottom
+        bodyShape.lineTo(2.35, 0.75);           // Front Bumper Vert
+        bodyShape.quadraticCurveTo(2.3, 0.85, 1.8, 0.9); // Nose to Hood transition
+        bodyShape.lineTo(0.6, 1.0);             // Windshield Base
+        bodyShape.lineTo(-1.0, 1.0);            // Roof Line
+        bodyShape.lineTo(-1.8, 0.95);           // Rear Window Base
+        bodyShape.lineTo(-2.2, 0.85);           // Trunk Top
+        bodyShape.lineTo(-2.25, chassisY + 0.1); // Rear Bumper Vertical
+        bodyShape.lineTo(2.3, chassisY);        // Close bottom
+
+        const bodyExtrudeSettings = {
             steps: 1,
-            depth: 1.8, // Car width
+            depth: 1.8, // Total Width
             bevelEnabled: true,
             bevelThickness: 0.05,
             bevelSize: 0.05,
-            bevelSegments: 4
+            bevelSegments: 3
         };
 
-        // Glass/Cabin Shape (Slightly inset)
-        const glassShape = new Shape();
-        glassShape.moveTo(0.5, 1.35);
-        glassShape.lineTo(-0.8, 1.4);
-        glassShape.lineTo(-1.6, 1.25);
-        glassShape.lineTo(-0.5, 1.35); // Close loop roughly
+        const bodyGeo = new ExtrudeGeometry(bodyShape, bodyExtrudeSettings);
+        // Translate Z to center the car width
+        bodyGeo.translate(0, 0, -bodyExtrudeSettings.depth / 2);
 
-        // Generate geometries
-        const bodyGeo = new ExtrudeGeometry(bodyShape, extrudeSettings);
-        const glassGeo = new ExtrudeGeometry(glassShape, {
-            ...extrudeSettings,
-            depth: 1.6, // Slightly narrower than body
-            bevelEnabled: false
+        // 2. Cabin/Glass Shape
+        const cabinShape = new Shape();
+        cabinShape.moveTo(0.7, 1.0);   // Front
+        cabinShape.lineTo(-0.2, 1.45); // Top Peak
+        cabinShape.lineTo(-1.4, 0.95); // Rear
+        cabinShape.lineTo(0.7, 1.0);   // Close
+
+        const cabinGeo = new ExtrudeGeometry(cabinShape, {
+            steps: 1,
+            depth: 1.5,
+            bevelEnabled: true,
+            bevelThickness: 0.02,
+            bevelSize: 0.02,
+            bevelSegments: 2
         });
+        cabinGeo.translate(0, 0, -1.5 / 2);
 
-        // Center the geometries
-        bodyGeo.center();
-        glassGeo.center();
-
-        return { bodyGeometry: bodyGeo, glassGeometry: glassGeo };
+        return {
+            bodyGeometry: bodyGeo,
+            glassGeometry: cabinGeo
+        };
     }, []);
 
-    const wheelRadius = 0.35;
-    const wheelWidth = 0.25;
+    const wheelRadius = 0.34;
+    const wheelWidth = 0.28;
+    const frontAxleX = 1.5;
+    const rearAxleX = -1.5;
+
+    const Wheel = ({ x, z, left }: { x: number, z: number, left: boolean }) => (
+        <group position={[x, wheelRadius, z]}>
+            <group rotation={[left ? 0 : Math.PI, 0, 0]}>
+                {/* Tire */}
+                <mesh rotation={[Math.PI / 2, 0, 0]}>
+                    <cylinderGeometry args={[wheelRadius, wheelRadius, wheelWidth, 32]} />
+                    <primitive object={materials.rubber} attach="material" />
+                </mesh>
+                {/* Rim */}
+                <mesh rotation={[Math.PI / 2, 0, 0]}>
+                    <cylinderGeometry args={[wheelRadius * 0.65, wheelRadius * 0.65, wheelWidth + 0.01, 16]} />
+                    <primitive object={materials.alloy} attach="material" />
+                </mesh>
+                {/* Wheel Cap */}
+                <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 0, left ? 0.15 : -0.15]}>
+                    <cylinderGeometry args={[wheelRadius * 0.2, wheelRadius * 0.2, 0.05, 8]} />
+                    <primitive object={materials.blackPlastic} attach="material" />
+                </mesh>
+            </group>
+        </group>
+    );
 
     return (
         <group ref={groupRef} rotation-y={Math.PI / 2}>
-            {/* Fake Shadow Blob */}
+            {/* Main Shadow Plane */}
             <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <circleGeometry args={[2.5, 32]} />
-                <meshBasicMaterial color="#000000" transparent opacity={0.6} depthWrite={false} />
-            </mesh>
-
-            {/* Main Body */}
-            <mesh position={[0, 0.7, 0]} castShadow receiveShadow geometry={bodyGeometry}>
-                <meshStandardMaterial
-                    color="#e0e0e0" // Slightly brighter white
-                    roughness={0.2}
-                    metalness={0.7}
-                    envMapIntensity={2.0} // strong reflections
-                />
-            </mesh>
-
-            {/* Cabin Glass (Visual overlay for windshield/windows) */}
-            <mesh position={[0, 0.95, 0]} geometry={glassGeometry}>
-                <meshStandardMaterial
-                    color="#222"
-                    roughness={0.0}
-                    metalness={0.9}
+                <planeGeometry args={[5, 2.4]} />
+                <meshBasicMaterial
+                    color="#000000"
                     transparent
-                    opacity={0.8}
+                    opacity={0.3}
+                    depthWrite={false}
                 />
             </mesh>
 
-            {/* Wheels */}
-            {/* Front Left */}
-            <mesh position={[1.4, wheelRadius, -0.75]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-                <cylinderGeometry args={[wheelRadius, wheelRadius, wheelWidth, 32]} />
-                <meshStandardMaterial color="#333333" roughness={0.7} />
-                <mesh position={[0, -0.13, 0]} rotation={[0, 0, 0]}>
-                    <cylinderGeometry args={[wheelRadius * 0.7, wheelRadius * 0.7, 0.05, 16]} />
-                    <meshStandardMaterial color="#cccccc" metalness={0.9} roughness={0.1} />
-                </mesh>
-            </mesh>
-            {/* Front Right */}
-            <mesh position={[1.4, wheelRadius, 0.75]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
-                <cylinderGeometry args={[wheelRadius, wheelRadius, wheelWidth, 32]} />
-                <meshStandardMaterial color="#333333" roughness={0.7} />
-                <mesh position={[0, 0.13, 0]} rotation={[0, 0, 0]}>
-                    <cylinderGeometry args={[wheelRadius * 0.7, wheelRadius * 0.7, 0.05, 16]} />
-                    <meshStandardMaterial color="#cccccc" metalness={0.9} roughness={0.1} />
-                </mesh>
-            </mesh>
-            {/* Rear Left */}
-            <mesh position={[-1.4, wheelRadius, -0.75]} rotation={[Math.PI / 2, 0, 0]} castShadow>
-                <cylinderGeometry args={[wheelRadius, wheelRadius, wheelWidth, 32]} />
-                <meshStandardMaterial color="#333333" roughness={0.7} />
-                <mesh position={[0, -0.13, 0]} rotation={[0, 0, 0]}>
-                    <cylinderGeometry args={[wheelRadius * 0.7, wheelRadius * 0.7, 0.05, 16]} />
-                    <meshStandardMaterial color="#cccccc" metalness={0.9} roughness={0.1} />
-                </mesh>
-            </mesh>
-            {/* Rear Right */}
-            <mesh position={[-1.4, wheelRadius, 0.75]} rotation={[-Math.PI / 2, 0, 0]} castShadow>
-                <cylinderGeometry args={[wheelRadius, wheelRadius, wheelWidth, 32]} />
-                <meshStandardMaterial color="#333333" roughness={0.7} />
-                <mesh position={[0, 0.13, 0]} rotation={[0, 0, 0]}>
-                    <cylinderGeometry args={[wheelRadius * 0.7, wheelRadius * 0.7, 0.05, 16]} />
-                    <meshStandardMaterial color="#cccccc" metalness={0.9} roughness={0.1} />
-                </mesh>
-            </mesh>
+            {/* --- Body Group --- */}
+            {/* Position Y=0. This respects the Shape's Y coordinates. */}
+            <group position={[0, 0, 0]}>
 
-            {/* Headlights */}
-            <mesh position={[2.1, 0.8, -0.6]} rotation={[0, 0.2, 0]}>
-                <boxGeometry args={[0.2, 0.1, 0.4]} />
-                <meshStandardMaterial color="#ccffff" emissive="#ccffff" emissiveIntensity={5} />
-            </mesh>
-            <mesh position={[2.1, 0.8, 0.6]} rotation={[0, -0.2, 0]}>
-                <boxGeometry args={[0.2, 0.1, 0.4]} />
-                <meshStandardMaterial color="#ccffff" emissive="#ccffff" emissiveIntensity={5} />
-            </mesh>
-
-            {/* Taillight Strip */}
-            <mesh position={[-2.05, 0.85, 0]}>
-                <boxGeometry args={[0.1, 0.12, 1.6]} />
-                <meshStandardMaterial color="#ff0000" emissive="#ff0000" emissiveIntensity={3} />
-            </mesh>
-
-            {/* Spoiler */}
-            <mesh position={[-1.9, 1.15, 0]}>
-                <boxGeometry args={[0.4, 0.05, 1.6]} />
-                <meshStandardMaterial color="#f0f0f0" roughness={0.2} metalness={0.6} />
-                {/* Spoiler legs */}
-                <mesh position={[0.1, -0.15, -0.5]}>
-                    <boxGeometry args={[0.1, 0.3, 0.05]} />
-                    <meshStandardMaterial color="#f0f0f0" />
+                {/* Main Body Chassis */}
+                <mesh geometry={bodyGeometry} castShadow receiveShadow>
+                    <primitive object={materials.paint} attach="material" />
                 </mesh>
-                <mesh position={[0.1, -0.15, 0.5]}>
-                    <boxGeometry args={[0.1, 0.3, 0.05]} />
-                    <meshStandardMaterial color="#f0f0f0" />
+
+                {/* Cabin Glass */}
+                <mesh position={[0.0, 0.02, 0]} geometry={glassGeometry}>
+                    <primitive object={materials.glass} attach="material" />
                 </mesh>
-            </mesh>
+
+                {/* Details positioned relative to Shape coordinates */}
+
+                {/* Hood Scoop */}
+                <mesh position={[1.0, 0.92, 0]}>
+                    <boxGeometry args={[0.8, 0.05, 1.2]} />
+                    <primitive object={materials.paint} attach="material" />
+                </mesh>
+
+                {/* Front Grille */}
+                <mesh position={[2.35, 0.55, 0]}>
+                    <boxGeometry args={[0.05, 0.25, 1.4]} />
+                    <primitive object={materials.blackPlastic} attach="material" />
+                </mesh>
+
+                {/* Headlights */}
+                <mesh position={[2.32, 0.7, -0.6]} rotation={[0, 0.1, 0]}>
+                    <boxGeometry args={[0.1, 0.1, 0.4]} />
+                    <primitive object={materials.emissionHeadlight} attach="material" />
+                </mesh>
+                <mesh position={[2.32, 0.7, 0.6]} rotation={[0, -0.1, 0]}>
+                    <boxGeometry args={[0.1, 0.1, 0.4]} />
+                    <primitive object={materials.emissionHeadlight} attach="material" />
+                </mesh>
+
+                {/* Taillight Strip */}
+                <mesh position={[-2.26, 0.8, 0]}>
+                    <boxGeometry args={[0.05, 0.12, 1.7]} />
+                    <primitive object={materials.emissionTaillight} attach="material" />
+                </mesh>
+
+                {/* Spoiler */}
+                <group position={[-2.0, 0.95, 0]}>
+                    {/* Wing */}
+                    <mesh position={[0, 0.2, 0]}>
+                        <boxGeometry args={[0.5, 0.05, 2.0]} />
+                        <primitive object={materials.paint} attach="material" />
+                    </mesh>
+                    {/* Supports */}
+                    <mesh position={[0, 0, -0.6]} rotation={[0.2, 0, 0]}>
+                        <boxGeometry args={[0.3, 0.3, 0.05]} />
+                        <primitive object={materials.blackPlastic} attach="material" />
+                    </mesh>
+                    <mesh position={[0, 0, 0.6]} rotation={[0.2, 0, 0]}>
+                        <boxGeometry args={[0.3, 0.3, 0.05]} />
+                        <primitive object={materials.blackPlastic} attach="material" />
+                    </mesh>
+                </group>
+
+                {/* Wheel Arches / Fenders */}
+                <mesh position={[frontAxleX, 0.6, 0.9]}>
+                    <boxGeometry args={[0.9, 0.35, 0.15]} />
+                    <primitive object={materials.paint} attach="material" />
+                </mesh>
+                <mesh position={[frontAxleX, 0.6, -0.9]}>
+                    <boxGeometry args={[0.9, 0.35, 0.15]} />
+                    <primitive object={materials.paint} attach="material" />
+                </mesh>
+                <mesh position={[rearAxleX, 0.6, 0.9]}>
+                    <boxGeometry args={[0.9, 0.35, 0.15]} />
+                    <primitive object={materials.paint} attach="material" />
+                </mesh>
+                <mesh position={[rearAxleX, 0.6, -0.9]}>
+                    <boxGeometry args={[0.9, 0.35, 0.15]} />
+                    <primitive object={materials.paint} attach="material" />
+                </mesh>
+            </group>
+
+            {/* --- Wheels --- */}
+            <Wheel x={frontAxleX} z={-1.05} left={false} />
+            <Wheel x={frontAxleX} z={1.05} left={true} />
+            <Wheel x={rearAxleX} z={-1.05} left={false} />
+            <Wheel x={rearAxleX} z={1.05} left={true} />
+
         </group>
     );
 }

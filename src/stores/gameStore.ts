@@ -34,6 +34,15 @@ interface GameState {
     // Road Data (for MiniMap & Respawn)
     roadPath: Vector3[];
     setRoadPath: (path: Vector3[]) => void;
+
+    // Audio State
+    isMuted: boolean;
+    toggleMute: () => void;
+    setMute: (isMuted: boolean) => void;
+
+    // Vehicle Selection
+    selectedVehicle: string;
+    setSelectedVehicle: (id: string) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -84,4 +93,13 @@ export const useGameStore = create<GameState>((set) => ({
 
     // Road Data Actions
     setRoadPath: (path) => set({ roadPath: path }),
+
+    // Audio State
+    isMuted: false,
+    toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
+    setMute: (muted: boolean) => set({ isMuted: muted }),
+
+    // Vehicle Selection
+    selectedVehicle: 'standard', // 'standard', 'sport', 'offroad'
+    setSelectedVehicle: (id: string) => set({ selectedVehicle: id }),
 }));

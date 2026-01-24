@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { AudioManager } from './AudioManager';
+import { useGameStore } from '../stores/gameStore';
 
 interface AmbientAudioProps {
     speedRef: React.MutableRefObject<number>;
@@ -67,10 +68,18 @@ export function AmbientAudio({ speedRef }: AmbientAudioProps) {
 
     useFrame(() => {
         if (gainNode.current) {
+            const isMuted = useGameStore.getState().isMuted;
+            const now = audioManager.current.context.currentTime;
+
+            if (isMuted) {
+                gainNode.current.gain.setTargetAtTime(0, now, 0.1);
+                return;
+            }
+
             // Wind volume increases with speed
             const speed = speedRef.current;
             const targetVol = Math.min(Math.abs(speed) / 50 * 0.5, 0.5);
-            gainNode.current.gain.setTargetAtTime(targetVol, audioManager.current.context.currentTime, 0.1);
+            gainNode.current.gain.setTargetAtTime(targetVol, now, 0.1);
         }
     });
 

@@ -1,7 +1,6 @@
 import { Scene } from './Scene'
 import { HUD } from './ui/HUD'
 import { MenuOverlay } from './ui/MenuOverlay'
-import { VehicleSelect } from './ui/VehicleSelect'
 import { GameErrorBoundary } from './components/GameErrorBoundary'
 
 function App() {
@@ -22,7 +21,6 @@ function App() {
 
           {/* UI Layer */}
           <HUD />
-          <VehicleSelect />
         </div>
 
         {/* Menu Overlay - has its own pointer events */}

@@ -45,7 +45,7 @@ export const VEHICLES: VehicleConfig[] = [
         description: 'Next gen speed.',
         type: 'gltf',
         path: '/models/cars/mcqueenbalcjkm/scene.gltf',
-        scale: 80, // Model has 0.01 internal scale, so 0.8 -> 80
+        scale: 1.5, // Reduced from 80 to 1.5 based on user feedback
         rotationOffset: [0, 0, 0], // Face forward direction  
         positionOffset: [0, 1.2, 0] // Lift to sit on road (model origin is below ground)
     }

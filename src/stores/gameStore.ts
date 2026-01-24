@@ -25,7 +25,7 @@ export const VEHICLES: VehicleConfig[] = [
         description: '1997 Tokyo Drift Legend. High slip angle.',
         type: 'gltf',
         path: '/models/cars/1997_tokyo_drift/scene.gltf',
-        scale: 1.2, // Model uses small internal units, scale up for visibility
+        scale: 120, // Model has 0.01 internal scale, so 1.2 -> 120
         rotationOffset: [0, Math.PI, 0], // Face forward direction
         positionOffset: [0, 0.3, 0] // Lift slightly for proper ground placement
     },
@@ -45,7 +45,7 @@ export const VEHICLES: VehicleConfig[] = [
         description: 'Next gen speed.',
         type: 'gltf',
         path: '/models/cars/mcqueenbalcjkm/scene.gltf',
-        scale: 0.8, // Model has internal 100x scale, adjust for proper size
+        scale: 80, // Model has 0.01 internal scale, so 0.8 -> 80
         rotationOffset: [0, Math.PI, 0], // Face forward direction  
         positionOffset: [0, 1.2, 0] // Lift to sit on road (model origin is below ground)
     }

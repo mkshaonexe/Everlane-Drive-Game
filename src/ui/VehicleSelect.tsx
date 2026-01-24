@@ -112,8 +112,7 @@ export function VehicleSelect({ onBack }: { onBack: () => void }) {
                                     <VehicleModel vehicleId={previewVehicleId} />
                                 </Stage>
                                 <OrbitControls
-                                    autoRotate
-                                    autoRotateSpeed={0.5} // Slowed down from 2
+                                    autoRotate={false} // Disabled to prevent shaking/jitter
                                     enableZoom={false}
                                     enablePan={false}
                                     minPolarAngle={0}

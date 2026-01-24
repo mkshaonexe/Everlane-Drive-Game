@@ -12,12 +12,12 @@ export class VehiclePhysics {
     private speed: number = 0;
 
     // Speed limits (m/s) - 60 m/s = 216 km/h
-    private normalMaxSpeed: number = 35;    // ~126 km/h for normal driving
+    private normalMaxSpeed: number = 50;    // ~180 km/h for normal driving (game-like)
     private turboMaxSpeed: number = 60;     // ~216 km/h for turbo (W+Shift)
     private reverseMaxSpeed: number = 20;   // ~72 km/h reverse
 
-    // Acceleration (m/s²) - realistic based on real cars
-    private normalAcceleration: number = 5;   // Normal W - gradual (0-100 in ~5.5 seconds)
+    // Acceleration (m/s²) - game-balanced
+    private normalAcceleration: number = 12;  // Normal W - faster for game feel
     private turboAcceleration: number = 25;   // W+Shift - fast (0-100 in ~1.1 seconds)
     private reverseAcceleration: number = 8;  // Reverse speed
 
@@ -160,10 +160,26 @@ export class VehiclePhysics {
 
         if (input.forward && this.onGround) {
             // FORWARD ACCELERATION (W or W+Shift)
-            // Apply acceleration with diminishing returns at higher speeds (simulates gear resistance)
-            const speedRatio = Math.abs(this.speed) / currentMaxSpeed;
-            const accelerationFactor = isTurbo ? 1.0 : (1.0 - speedRatio * 0.7); // Turbo maintains full power
-            const effectiveAcc = currentAcceleration * Math.max(0.3, accelerationFactor);
+            let effectiveAcc: number;
+
+            if (isTurbo) {
+                // Turbo mode: Full power all the way
+                effectiveAcc = currentAcceleration;
+            } else {
+                // Normal mode: Progressive speed zones (like gear shifts)
+                const speedKmh = Math.abs(this.speed) * 3.6; // Convert m/s to km/h
+
+                if (speedKmh < 80) {
+                    // 0-80 km/h: Fast acceleration (100% power)
+                    effectiveAcc = currentAcceleration;
+                } else if (speedKmh < 150) {
+                    // 80-150 km/h: Medium acceleration (50% power)
+                    effectiveAcc = currentAcceleration * 0.5;
+                } else {
+                    // 150-180 km/h: Slow acceleration (25% power)
+                    effectiveAcc = currentAcceleration * 0.25;
+                }
+            }
 
             this.speed += effectiveAcc * delta;
 

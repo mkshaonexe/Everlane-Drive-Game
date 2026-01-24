@@ -33,16 +33,20 @@ The car allows for a "semi-arcade" driving feel using a custom raycast suspensio
 -   **Gravity & Ground Detection**: Applies gravity when airborne; implements a safety net to respawn the car if it falls through the map.
 
 ### Driving Dynamics
--   **Acceleration Zones**:
-    -   **0-80 km/h**: High torque (100% power) for quick launches.
-    -   **80-150 km/h**: Medium torque (50% power).
-    -   **150+ km/h**: Lower torque (25% power) creating a natural top-speed ceiling.
--   **Turbo Mode (Shift)**: Overrides the acceleration curve with constant high power and increases max speed to ~216 km/h.
+-   **Variable Acceleration**:
+    -   **Linear input**: Gentle acceleration for cruising.
+    -   **Shift modifier**: Aggressive power delivery for racing.
 -   **Braking ('S' Key)**:
     -   At speed: Applies strong braking force.
-    -   At standstill: Transitions to reverse gear.
+    -   At standstill: Transitions to reverse gear (smart shifting).
 -   **Handbrake (Space)**: Applies immediate, strong deceleration force for drifting or emergency stops.
 -   **Off-Road Penalties**: Driving off the road surface reduces speed cap by 40% and reduces handling (turn speed) to simulate traction loss.
+
+### Available Vehicles
+- **Standard EV**: Balanced performance, modern look.
+- **Drift King**: Tuned for sliding, higher torque.
+- **Storm**: Heavy duty, stable tracking.
+- **Lightning**: High top speed, aggressive aero.
 
 ### Controls
 -   **W**: Throttle (Forward)

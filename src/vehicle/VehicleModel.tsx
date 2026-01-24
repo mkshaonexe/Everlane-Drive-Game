@@ -41,7 +41,7 @@ export function VehicleModel({ vehicleId }: { vehicleId?: string }) {
     // --- GLTF Loading ---
     if (config.type === 'gltf' && config.path) {
         return (
-            <group ref={groupRef}>
+            <group ref={groupRef} rotation-y={Math.PI}>
                 {/* Main Shadow Plane */}
                 <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
                     <planeGeometry args={[5, 2.4]} />

@@ -9,31 +9,52 @@ A high-fidelity recreation of the browser-based 3D driving game [slowroads.io](h
 
 ## 🚗 Project Overview
 
-This project aims to replicate the minimalist, soothing, yet technically complex experience of driving through infinite procedural landscapes. It focuses on high-quality rendering, smooth vehicle physics, and intelligent world generation.
-
-### Key Features
-
--   **Infinite Procedural Terrain**: Landscape generated on-the-fly using multi-octave noise.
--   **Procedural Road System**: Intelligent road paths that follow terrain contours naturally.
--   **Arcade-Realistic Physics**: Vehicle dynamics with throttle, braking, and steering.
--   **Dynamic Environment**: Lighting, weather (fog), and vegetation systems.
--   **Minimal HUD**: A clean, immersive user interface.
+This project aims to replicate the minimalist, soothing, yet technically complex experience of driving through infinite procedural landscapes. It focuses on high-quality rendering, smooth vehicle physics, and intelligent world generation. The infinite terrain generator uses multi-octave noise to create varied landscapes, while the road system adapts dynamically to the terrain contours.
 
 ## 🏗️ Technical Architecture
 
-The project is structured into modular systems:
+The project is structured into modular systems for maintainability and scalability:
 
--   **`src/core`**: Main game engine and world managers.
--   **`src/terrain`**: Noise-based heightmaps and road generation algorithms.
--   **`src/vehicle`**: Physics, control logic, and camera systems.
--   **`src/graphics`**: Lighting, weather, vegetation, and post-processing.
--   **`src/ui`**: React-based HUD and menus.
--   **`src/stores`**: State management using Zustand.
+-   **`src/core`**: Main game engine loop, world management, and dynamic loading.
+-   **`src/terrain`**: Procedural generation logic using Simplex noise for heightmaps and infinite chunk management.
+-   **`src/vehicle`**: The "Care Model" - Physics engine, vehicle controller, and camera logic.
+-   **`src/graphics`**: Visual systems including mood lighting, dynamic weather (fog, time of day), and vegetation rendering.
+-   **`src/ui`**: React-based HUD overlay, menus, and debug tools.
+-   **`src/stores`**: State management using Zustand for high-frequency game data.
+
+## 🏎️ Care Model (Vehicle Physics & Implementation)
+
+The vehicle implementation (The "Care Model") is designed to balance arcade fun with realistic weight and suspension feel.
+
+### Physics Engine (`VehiclePhysics.ts`)
+The car allows for a "semi-arcade" driving feel using a custom raycast suspension system rather than a generic physics engine body.
+-   **Raycast Suspension**: 4-wheel independent rays cast downwards to detect terrain height.
+-   **Spring-Damper Model**: Calculates compression forces ($F = kx - dv$) to simulate suspension travel and bounce.
+-   **Gravity & Ground Detection**: Applies gravity when airborne; implements a safety net to respawn the car if it falls through the map.
+
+### Driving Dynamics
+-   **Acceleration Zones**:
+    -   **0-80 km/h**: High torque (100% power) for quick launches.
+    -   **80-150 km/h**: Medium torque (50% power).
+    -   **150+ km/h**: Lower torque (25% power) creating a natural top-speed ceiling.
+-   **Turbo Mode (Shift)**: Overrides the acceleration curve with constant high power and increases max speed to ~216 km/h.
+-   **Braking ('S' Key)**:
+    -   At speed: Applies strong braking force.
+    -   At standstill: Transitions to reverse gear.
+-   **Handbrake (Space)**: Applies immediate, strong deceleration force for drifting or emergency stops.
+-   **Off-Road Penalties**: Driving off the road surface reduces speed cap by 40% and reduces handling (turn speed) to simulate traction loss.
+
+### Controls
+-   **W**: Throttle (Forward)
+-   **S**: Brake / Reverse
+-   **A / D**: Steer Left / Right
+-   **Space**: Handbrake
+-   **Shift**: Turbo Boost
+-   **R**: Respawn on track
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-
 -   Node.js (v18 or higher)
 -   npm or yarn
 
@@ -55,14 +76,13 @@ The project is structured into modular systems:
 ## 🛠️ Current Status
 
 - [x] Core Engine Loop
-- [x] Basic Procedural Terrain (Heightmap)
-- [x] Vehicle Physics & Controls
-- [x] Basic Lighting & Fog
+- [x] Infinite Procedural Terrain
+- [x] Advanced Vehicle Physics ("Care Model")
+- [x] Dynamic Lighting & Fog
 - [/] Procedural Road Path Generation (In Progress)
 - [/] Vegetation System (In Progress)
-- [/] HUD & Menu Overlays (In Progress)
 
 ## 📄 License
 
-MIT License - see [LICENSE](LICENSE) for details. (Note: Asset credits to original Slow Roads developers where applicable).
-
+MIT License.
+Asset credits belong to their respective creators. Original concept by [slowroads.io](https://slowroads.io).

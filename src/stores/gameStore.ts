@@ -27,7 +27,7 @@ export const VEHICLES: VehicleConfig[] = [
         type: 'gltf',
         path: '/models/cars/1997_tokyo_drift/scene.gltf',
         scale: 120, // Model has 0.01 internal scale, so 1.2 -> 120
-        rotationOffset: [0, Math.PI, 0], // Face forward direction
+        rotationOffset: [0, 0, 0], // Face forward (net 180 deg with component rotation)
         positionOffset: [0, -0.1, 0] // Lower to reduce gap
     },
     {
@@ -37,7 +37,7 @@ export const VEHICLES: VehicleConfig[] = [
         type: 'gltf',
         path: '/models/cars/lightning_mcqueen_cars_3/scene.gltf',
         scale: 1.5,
-        rotationOffset: [0, Math.PI, 0],
+        rotationOffset: [0, 0, 0],
         positionOffset: [0, -0.6, 0]
     },
     {
@@ -47,7 +47,7 @@ export const VEHICLES: VehicleConfig[] = [
         type: 'gltf',
         path: '/models/cars/mcqueenbalcjkm/scene.gltf',
         scale: 1.5, // Reduced from 80 to 1.5 based on user feedback
-        rotationOffset: [0, Math.PI, 0], // Face forward direction  
+        rotationOffset: [0, 0, 0], // Face forward (net 180 deg with component rotation)
         positionOffset: [0, -0.6, 0] // Same as Lightning
     }
 ];

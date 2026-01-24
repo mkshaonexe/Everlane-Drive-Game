@@ -48,8 +48,8 @@ export function HUD() {
 
     return (
         <>
-            {/* Top Left Controls */}
-            <div className="absolute top-6 left-6 flex items-center gap-3 z-50 pointer-events-auto">
+            {/* Top Right Controls */}
+            <div className="absolute top-6 right-6 flex items-center gap-3 z-50 pointer-events-auto">
                 <button
                     onClick={toggleMute}
                     className={`w-12 h-12 rounded-full flex items-center justify-center backdrop-blur-md border border-white/20 transition-all hover:scale-110 shadow-lg group ${isMuted ? 'bg-red-500/50 text-white' : 'bg-black/40 text-white/80 hover:bg-black/60'

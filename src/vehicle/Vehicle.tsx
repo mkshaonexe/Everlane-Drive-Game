@@ -41,6 +41,8 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
     }, [engineAudio]);
 
     const speedRef = useRef(0);
+    const lastStoreUpdate = useRef(0);
+    const positionBuffer = useRef(new Vector3());
 
     useFrame((_state, delta) => {
         if (!groupRef.current) return;
@@ -61,11 +63,18 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         engineAudio.update(speed);
         speedRef.current = speed;
 
-        // Update UI Store (throttled slightly if needed, but per frame is fine for simple store)
+        // PERF: Throttle store updates to 20Hz (every 50ms) to reduce React re-renders
+        const now = performance.now();
         const { setSpeed, addDistance, setPosition, isFreeLookActive, freeLookYaw, freeLookPitch, roadPath, cameraDistance } = useGameStore.getState();
-        setSpeed(speed);
-        addDistance(speed * dt); // Distance = Speed * Time
-        setPosition(physics.position.clone()); // Clone to avoid reference issues
+
+        if (now - lastStoreUpdate.current > 50) {
+            setSpeed(speed);
+            addDistance(speed * dt); // Distance = Speed * Time
+            // Reuse positionBuffer to avoid creating new Vector3 every frame (GC pressure)
+            positionBuffer.current.copy(physics.position);
+            setPosition(positionBuffer.current);
+            lastStoreUpdate.current = now;
+        }
 
         // Handle Respawn (R key)
         if (controller.input.reset && roadPath.length > 0) {

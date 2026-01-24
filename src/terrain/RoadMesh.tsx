@@ -35,12 +35,19 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
         return texture;
     }, []);
 
+    // PERF: Memoize stable length to prevent geometry regeneration on small path changes
+    // Only triggers rebuild every 50m of new road
+    const stableLength = useMemo(() => {
+        return Math.floor(path.getLength() / 50) * 50;
+    }, [path]);
+
     const roadGeometry = useMemo(() => {
+        const actualLength = path.getLength();
+
         // Dynamic segments based on length for consistent high resolution
         // At least 200, or 1 segment per meter (whichever is higher)
         // This solves the low-poly road clipping into hills issue
-        const length = path.getLength();
-        const segments = Math.max(200, Math.floor(length));
+        const segments = Math.max(200, Math.floor(actualLength));
 
         const positions: number[] = [];
         const uvs: number[] = [];
@@ -116,7 +123,8 @@ export const RoadMesh = ({ path, width = 10 }: RoadMeshProps) => {
         geo.setIndex(indices);
         geo.computeVertexNormals();
         return geo;
-    }, [path, width]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [stableLength, width]); // PERF: Use stableLength instead of path to reduce rebuilds
 
     // Lane markings geometry (Solid Mesh)
     const laneMarkingsGeometry = useMemo(() => {

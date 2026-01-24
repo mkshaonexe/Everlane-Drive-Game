@@ -1,4 +1,4 @@
-import { useRef, useState, useMemo, useEffect } from 'react';
+import { useRef, useState, useMemo, useEffect, startTransition } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Group, Vector3 } from 'three';
 import { TerrainChunk } from '../terrain/TerrainChunk';
@@ -40,9 +40,16 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
     });
 
     const lastExtensionZ = useRef(0);
+    const frameCounter = useRef(0);
 
     // Dynamic chunk loading based on vehicle position
+    // PERF: Throttled to every 3rd frame to reduce React re-renders
     useFrame(() => {
+        frameCounter.current++;
+
+        // Only run every 3rd frame to reduce load
+        if (frameCounter.current % 3 !== 0) return;
+
         const vehiclePos = useGameStore.getState().position;
 
         // Extend road if vehicle is getting close to the end
@@ -50,9 +57,11 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
         const distanceToEnd = roadEndZ - vehiclePos.z;
 
         if (distanceToEnd < 400 && roadEndZ > lastExtensionZ.current + 100) {
-            // Extend road by 400m
+            // Extend road by 400m - use startTransition for non-blocking update
             const newPath = roadGen.extendPath(400);
-            setRoadPath(newPath);
+            startTransition(() => {
+                setRoadPath(newPath);
+            });
             lastExtensionZ.current = roadEndZ;
         }
 
@@ -60,20 +69,23 @@ export function DynamicWorld({ terrainGroupRef }: DynamicWorldProps) {
         const update = chunkManager.update(vehiclePos);
 
         if (update.chunksToLoad.length > 0 || update.chunksToUnload.length > 0) {
-            setLoadedChunks(prev => {
-                // Create a set of IDs to unload for fast lookup
-                const unloadIds = new Set(update.chunksToUnload);
+            // Use startTransition to defer chunk state updates (non-blocking)
+            startTransition(() => {
+                setLoadedChunks(prev => {
+                    // Create a set of IDs to unload for fast lookup
+                    const unloadIds = new Set(update.chunksToUnload);
 
-                // Filter out chunks that need to be unloaded
-                const keptChunks = prev.filter(c => !unloadIds.has(`${c.x}_${c.z}`));
+                    // Filter out chunks that need to be unloaded
+                    const keptChunks = prev.filter(c => !unloadIds.has(`${c.x}_${c.z}`));
 
-                // Filter new chunks to ensure no duplicates (sanity check)
-                const currentIds = new Set(keptChunks.map(c => `${c.x}_${c.z}`));
-                const newChunks = update.chunksToLoad.filter(
-                    c => !currentIds.has(`${c.x}_${c.z}`)
-                );
+                    // Filter new chunks to ensure no duplicates (sanity check)
+                    const currentIds = new Set(keptChunks.map(c => `${c.x}_${c.z}`));
+                    const newChunks = update.chunksToLoad.filter(
+                        c => !currentIds.has(`${c.x}_${c.z}`)
+                    );
 
-                return [...keptChunks, ...newChunks];
+                    return [...keptChunks, ...newChunks];
+                });
             });
         }
     });

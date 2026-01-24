@@ -1,8 +1,9 @@
 import { useGameStore, VEHICLES } from '../stores/gameStore';
 import { useEffect, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Stage, OrbitControls } from '@react-three/drei';
+import { Stage, OrbitControls, Html } from '@react-three/drei';
 import { VehicleModel } from '../vehicle/VehicleModel';
+import { LoadingSpinner } from './LoadingSpinner';
 
 type Tab = 'graphics' | 'vehicle' | 'audio' | 'general';
 
@@ -132,11 +133,15 @@ export function SettingsMenu({ onClose }: { onClose: () => void }) {
                                         <span className="text-xs font-bold text-white/70 uppercase tracking-widest">Preview</span>
                                     </div>
                                     <Canvas shadows dpr={[1, 2]} camera={{ position: [4, 2, 4], fov: 45 }}>
-                                        <Suspense fallback={null}>
+                                        <Suspense fallback={
+                                            <Html center>
+                                                <LoadingSpinner />
+                                            </Html>
+                                        }>
                                             <Stage environment="city" intensity={0.5} contactShadow={{ opacity: 0.5, blur: 2 }}>
                                                 <VehicleModel vehicleId={selectedVehicle} />
                                             </Stage>
-                                            <OrbitControls autoRotate autoRotateSpeed={2} enableZoom={false} enablePan={false} minPolarAngle={0} maxPolarAngle={Math.PI / 2} />
+                                            <OrbitControls autoRotate autoRotateSpeed={0.5} enableZoom={false} enablePan={false} minPolarAngle={0} maxPolarAngle={Math.PI / 2} />
                                         </Suspense>
                                     </Canvas>
                                 </div>

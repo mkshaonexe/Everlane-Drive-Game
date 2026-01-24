@@ -14,13 +14,7 @@ export function MenuOverlay() {
     if (view === 'garage') {
         return (
             <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex flex-col items-center justify-center animate-in fade-in duration-300">
-                <VehicleSelect />
-                <button
-                    onClick={() => setView('main')}
-                    className="mt-8 px-6 py-2 bg-white/10 text-white rounded-full hover:bg-white/20 transition-colors z-50 uppercase text-sm tracking-widest font-bold"
-                >
-                    Back to Menu
-                </button>
+                <VehicleSelect onBack={() => setView('main')} />
             </div>
         );
     }

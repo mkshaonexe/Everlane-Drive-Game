@@ -103,6 +103,20 @@ export const MAPS: MapConfig[] = [
         fogFar: 500,
         spawnPosition: [-79.2, 38, 34.2], // Adjusted spawn height to match scaled town
     },
+    {
+        id: 'drift_track',
+        name: 'Drift Track',
+        description: 'Nicholas-3D Drift Race Track. Perfect for high-speed slides and tight corners.',
+        type: 'gltf',
+        path: '/models/maps/drift_race_track_free/scene.gltf',
+        scale: 20,
+        rotationOffset: [0, 0, 0],
+        positionOffset: [0, 0, 0],
+        fogColor: '#a3c2c4',
+        fogNear: 40,
+        fogFar: 400,
+        spawnPosition: [10.5, 2.0, -43.0],
+    },
 ];
 
 interface GameState {

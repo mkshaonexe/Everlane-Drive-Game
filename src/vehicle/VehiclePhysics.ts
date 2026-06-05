@@ -125,19 +125,7 @@ export class VehiclePhysics {
         const waterIntersects = waterRaycaster.intersectObjects(terrainObjects, true);
 
         for (const hit of waterIntersects) {
-            let isWaterMesh = false;
-            const mat = (hit.object as any).material;
-            if (mat) {
-                if (Array.isArray(mat)) {
-                    isWaterMesh = mat.some(m => m.name === 'material_047_0');
-                } else {
-                    isWaterMesh = mat.name === 'material_047_0';
-                }
-            }
-            if (!isWaterMesh && hit.object.name && hit.object.name.includes('material_100_0')) {
-                isWaterMesh = true;
-            }
-            if (isWaterMesh) {
+            if (this._checkIsWater(hit.object)) {
                 waterY = hit.point.y;
                 isWater = true;
                 break;
@@ -170,18 +158,7 @@ export class VehiclePhysics {
                 const distance = hit.distance;
 
                 // Check if this wheel hit is water
-                let isWaterHit = false;
-                const mat = (hit.object as any).material;
-                if (mat) {
-                    if (Array.isArray(mat)) {
-                        isWaterHit = mat.some(m => m.name === 'material_047_0');
-                    } else {
-                        isWaterHit = mat.name === 'material_047_0';
-                    }
-                }
-                if (!isWaterHit && hit.object.name && hit.object.name.includes('material_100_0')) {
-                    isWaterHit = true;
-                }
+                const isWaterHit = this._checkIsWater(hit.object);
 
                 // Only apply solid ground collision / suspension if it's not water
                 if (!isWaterHit) {
@@ -468,6 +445,20 @@ export class VehiclePhysics {
         }
     }
 
+    private _checkIsWater(object: Object3D): boolean {
+        const objName = object.name ? object.name.toLowerCase() : '';
+        const mat = (object as any).material;
+        let matName = '';
+        if (mat) {
+            if (Array.isArray(mat)) {
+                matName = mat.map(m => m.name ? m.name.toLowerCase() : '').join(' ');
+            } else {
+                matName = mat.name ? mat.name.toLowerCase() : '';
+            }
+        }
+        return objName.includes('water') || matName.includes('water') || matName.includes('material_047_0') || objName.includes('material_100_0');
+    }
+
     // ============================================================
     // HORIZONTAL COLLISION RESOLUTION
     // Casts rays in 8 directions around the car in world space.
@@ -519,14 +510,7 @@ export class VehiclePhysics {
                     const hit = hits[0];
 
                     // Skip water meshes — car should float, not bounce off water surface sideways
-                    let isWater = false;
-                    const mat = (hit.object as any).material;
-                    if (mat) {
-                        const checkWater = (m: any) =>
-                            m && (m.name === 'material_047_0' || (hit.object.name && hit.object.name.includes('material_100_0')));
-                        isWater = Array.isArray(mat) ? mat.some(checkWater) : checkWater(mat);
-                    }
-                    if (isWater) continue;
+                    if (this._checkIsWater(hit.object)) continue;
 
                     // Skip the flat ground plane (we only want vertical walls/barriers)
                     // Flat geometry normals point mostly upward (Y > 0.7 means nearly horizontal surface)

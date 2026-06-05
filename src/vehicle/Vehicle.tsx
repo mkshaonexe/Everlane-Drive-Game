@@ -92,7 +92,11 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
 
         // Handle Respawn (R key)
         if (controller.input.reset) {
-            if (roadPath.length > 0) {
+            const selectedMap = useGameStore.getState().selectedMap;
+            const mapConfig = MAPS.find(m => m.id === selectedMap);
+            const isProcedural = mapConfig?.type === 'procedural';
+
+            if (isProcedural && roadPath.length > 0) {
                 // Find nearest point on road
                 // Since road points are ordered, we can just find closest one by distance
                 // Optimization: Start search from last known closest index if we tracked it, 

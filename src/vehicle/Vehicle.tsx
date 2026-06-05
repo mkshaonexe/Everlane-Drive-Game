@@ -28,8 +28,9 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
     const controller = useMemo(() => new VehicleController(), []);
     const cameraController = useMemo(() => new CameraController(camera), [camera]);
 
-    // Cleanup controller events
+    // Setup and cleanup controller events
     useEffect(() => {
+        controller.setup();
         return () => controller.dispose();
     }, [controller]);
 

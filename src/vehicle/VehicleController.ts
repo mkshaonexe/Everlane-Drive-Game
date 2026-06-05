@@ -26,6 +26,10 @@ export class VehicleController {
     private mouseSensitivity: number = 0.003;
 
     constructor() {
+        // Event listeners are added in setup() during useEffect to avoid React render phase side effects
+    }
+
+    public setup() {
         this.addEventListeners();
     }
 

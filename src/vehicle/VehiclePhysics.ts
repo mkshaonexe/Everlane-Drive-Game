@@ -1,4 +1,4 @@
-import { Vector3, Quaternion, Raycaster, Object3D } from 'three';
+import { Vector3, Quaternion, Raycaster, Object3D, Matrix3 } from 'three';
 import type { InputState } from './VehicleController';
 import { clamp } from 'three/src/math/MathUtils.js';
 
@@ -468,14 +468,10 @@ export class VehiclePhysics {
     private _resolveHorizontalCollisions(proposedPosition: Vector3, terrainObjects: Object3D[]): void {
         if (terrainObjects.length === 0) return;
 
-        // Accumulate total push-back across all probes this frame
-        const totalPushback = new Vector3();
-        let hitCount = 0;
-        let maxPenetration = 0;
-
         // Temp vectors (reuse to avoid GC pressure)
         const worldOrigin = new Vector3();
         const worldDir = new Vector3();
+        const normalMatrix = new Matrix3();
 
         // Inset value to shift ray origins inward, preventing failure when slightly inside the wall
         const INSET = 1.0;
@@ -513,8 +509,12 @@ export class VehiclePhysics {
                     if (this._checkIsWater(hit.object)) continue;
 
                     // Skip the flat ground plane (we only want vertical walls/barriers)
-                    // Flat geometry normals point mostly upward (Y > 0.7 means nearly horizontal surface)
-                    if (hit.face && Math.abs(hit.face.normal.y) > 0.7) continue;
+                    // Flat geometry normals point mostly upward (Y > 0.7 means nearly horizontal surface in world space)
+                    if (hit.face) {
+                        normalMatrix.getNormalMatrix(hit.object.matrixWorld);
+                        const worldNormal = hit.face.normal.clone().applyMatrix3(normalMatrix).normalize();
+                        if (Math.abs(worldNormal.y) > 0.7) continue;
+                    }
 
                     // Penetration depth: how far inside the object we'd be
                     const penetration = (probe.reach + INSET) - hit.distance;
@@ -523,40 +523,31 @@ export class VehiclePhysics {
                     // Push back opposite to the ray direction
                     // The push magnitude equals the penetration depth
                     const pushVec = worldDir.clone().multiplyScalar(-penetration);
-                    totalPushback.add(pushVec);
+                    
+                    // Immediately apply push-back to the proposed position so subsequent probes use the corrected position
+                    proposedPosition.add(pushVec);
 
-                    if (penetration > maxPenetration) {
-                        maxPenetration = penetration;
+                    // Apply velocity response: reflect the horizontal velocity component along push direction
+                    const pushDir = pushVec.clone().normalize();
+
+                    // Project velocity onto push direction
+                    const velAlongPush = this.velocity.dot(pushDir);
+                    if (velAlongPush < 0) {
+                        // Only apply if velocity is going INTO the wall
+                        // Subtract the wall-penetrating component and add a small bounce
+                        const correction = pushDir.clone().multiplyScalar(-velAlongPush * (1 + RESTITUTION));
+                        this.velocity.add(correction);
+                        
+                        // Update speed to reflect the new velocity direction (crucial for Bug 8)
+                        this.speed = this.velocity.dot(this.forward);
                     }
-                    hitCount++;
+
+                    // Reduce speed on collision — sharper hits lose more speed
+                    const impactStrength = Math.min(penetration / COLLISION_PROBE_DIST, 1.0);
+                    const speedReduction = 1.0 - impactStrength * (1.0 - COLLISION_SPEED_DAMPING);
+                    this.speed *= speedReduction;
                 }
             }
-        }
-
-        // -- Apply accumulated push-back --
-        if (hitCount > 0) {
-            // Average push-back across hits to avoid over-correction when multiple probes fire
-            totalPushback.divideScalar(hitCount);
-
-            // Apply position correction to the proposed position
-            proposedPosition.add(totalPushback);
-
-            // Apply velocity response: reflect the horizontal velocity component along push direction
-            const pushDir = totalPushback.clone().normalize();
-
-            // Project velocity onto push direction
-            const velAlongPush = this.velocity.dot(pushDir);
-            if (velAlongPush < 0) {
-                // Only apply if velocity is going INTO the wall
-                // Subtract the wall-penetrating component and add a small bounce
-                const correction = pushDir.clone().multiplyScalar(-velAlongPush * (1 + RESTITUTION));
-                this.velocity.add(correction);
-            }
-
-            // Reduce speed on collision — sharper hits lose more speed
-            const impactStrength = Math.min(maxPenetration / COLLISION_PROBE_DIST, 1.0);
-            const speedReduction = 1.0 - impactStrength * (1.0 - COLLISION_SPEED_DAMPING);
-            this.speed *= speedReduction;
         }
     }
 }

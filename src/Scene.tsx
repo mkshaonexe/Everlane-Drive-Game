@@ -51,7 +51,7 @@ export function Scene() {
                     <DynamicWorld terrainGroupRef={terrainGroupRef} />
                 ) : (
                     /* GLTF Map */
-                    <GLTFMap />
+                    <GLTFMap terrainGroupRef={terrainGroupRef} />
                 )}
 
                 {/* Vehicle - spawn position from map config */}

@@ -43,16 +43,6 @@ export function VehicleModel({ vehicleId }: { vehicleId?: string }) {
     if (config.type === 'gltf' && config.path) {
         return (
             <group ref={groupRef} rotation-y={Math.PI}>
-                {/* Main Shadow Plane */}
-                <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                    <planeGeometry args={[5, 2.4]} />
-                    <meshBasicMaterial
-                        color="#000000"
-                        transparent
-                        opacity={0.3}
-                        depthWrite={false}
-                    />
-                </mesh>
                 <VehicleErrorBoundary fallback={<ProceduralVehicle id="standard" />}>
                     <Suspense fallback={<LoadingPlaceholder />}>
                         <GLTFVehicle
@@ -249,17 +239,6 @@ function ProceduralVehicle({ id }: { id: string }) {
 
     return (
         <group ref={groupRef} rotation-y={Math.PI / 2}>
-            {/* Main Shadow Plane */}
-            <mesh position={[0, 0.05, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-                <planeGeometry args={[5, 2.4]} />
-                <meshBasicMaterial
-                    color="#000000"
-                    transparent
-                    opacity={0.3}
-                    depthWrite={false}
-                />
-            </mesh>
-
             {/* --- Body Group --- */}
             {/* Position Y=0. This respects the Shape's Y coordinates. */}
             <group position={[0, 0, 0]}>

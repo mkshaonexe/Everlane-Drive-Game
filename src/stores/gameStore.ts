@@ -83,7 +83,7 @@ export const VEHICLES: VehicleConfig[] = [
         type: 'gltf',
         path: '/models/cars/milano_95_racemod_-_low_poly_model/scene.gltf',
         scale: 0.55,
-        rotationOffset: [0, 0, 0],
+        rotationOffset: [0, -Math.PI / 2, 0],
         positionOffset: [0, -0.3, 0]
     }
 ];

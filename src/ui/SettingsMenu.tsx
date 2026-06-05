@@ -1,19 +1,20 @@
 import { useGameStore, VEHICLES, MAPS } from '../stores/gameStore';
 import { useEffect, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Stage, OrbitControls, Html, Environment } from '@react-three/drei';
+import { Stage, OrbitControls, Html } from '@react-three/drei';
 import { VehicleModel } from '../vehicle/VehicleModel';
 import { LoadingSpinner } from './LoadingSpinner';
 import { useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
+import { getAssetPath } from '../utils/paths';
 
 type Tab = 'graphics' | 'vehicle' | 'map' | 'audio' | 'general';
 
 // Mini GLTF Map Preview component
 function MapPreviewModel({ path, scale = 1 }: { path: string; scale?: number }) {
-    const { scene } = useGLTF(path);
+    const { scene } = useGLTF(getAssetPath(path));
     const clonedScene = useMemo(() => scene.clone(), [scene]);
-    return <primitive object={clonedScene} scale={scale * 0.005} position={[0, -1, 0]} />;
+    return <primitive object={clonedScene} scale={scale} />;
 }
 
 export function SettingsMenu({ onClose }: { onClose: () => void }) {
@@ -238,16 +239,15 @@ export function SettingsMenu({ onClose }: { onClose: () => void }) {
                                     </div>
 
                                     {currentMapConfig.type === 'gltf' && currentMapConfig.path ? (
-                                        <Canvas shadows dpr={[1, 2]} camera={{ position: [30, 20, 30], fov: 55 }}>
+                                        <Canvas shadows dpr={[1, 2]} camera={{ position: [15, 10, 15], fov: 50 }}>
                                             <Suspense fallback={
                                                 <Html center>
                                                     <LoadingSpinner />
                                                 </Html>
                                             }>
-                                                <ambientLight intensity={1.5} />
-                                                <directionalLight position={[10, 20, 10]} intensity={2} />
-                                                <Environment preset="sunset" />
-                                                <MapPreviewModel path={currentMapConfig.path} scale={currentMapConfig.scale ?? 1} />
+                                                <Stage environment="sunset" intensity={0.5}>
+                                                    <MapPreviewModel path={currentMapConfig.path} scale={currentMapConfig.scale ?? 1} />
+                                                </Stage>
                                                 <OrbitControls autoRotate autoRotateSpeed={0.3} enableZoom={true} enablePan={false} minPolarAngle={0.2} maxPolarAngle={Math.PI / 2.5} />
                                             </Suspense>
                                         </Canvas>

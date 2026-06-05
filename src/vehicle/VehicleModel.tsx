@@ -3,6 +3,7 @@ import type { ErrorInfo, ReactNode } from 'react';
 import { Group, Shape, ExtrudeGeometry, MeshPhysicalMaterial, Color } from 'three';
 import { useGLTF } from '@react-three/drei';
 import { useGameStore, VEHICLES } from '../stores/gameStore';
+import { getAssetPath } from '../utils/paths';
 
 // Error Boundary for Vehicle Loading
 class VehicleErrorBoundary extends Component<
@@ -351,7 +352,7 @@ function ProceduralVehicle({ id }: { id: string }) {
 }
 
 function GLTFVehicle({ path, scale = 1, rotation = [0, 0, 0], position = [0, 0, 0] }: { path: string, scale?: number, rotation?: number[], position?: number[] }) {
-    const { scene } = useGLTF(path);
+    const { scene } = useGLTF(getAssetPath(path));
     const clonedScene = useMemo(() => scene.clone(), [scene]);
 
     return <primitive

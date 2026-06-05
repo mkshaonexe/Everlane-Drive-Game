@@ -42,7 +42,7 @@ export const VEHICLES: VehicleConfig[] = [
         description: 'Burnout Dominator Factory Sports. Raw power meets precision.',
         type: 'gltf',
         path: '/models/cars/factory_sports_burnout_dominator/scene.gltf',
-        scale: 1.5,
+        scale: 0.55,
         rotationOffset: [0, 0, 0],
         positionOffset: [0, -0.3, 0]
     },
@@ -52,7 +52,7 @@ export const VEHICLES: VehicleConfig[] = [
         description: '1997 Tokyo Drift Legend. High slip angle.',
         type: 'gltf',
         path: '/models/cars/1997_tokyo_drift/scene.gltf',
-        scale: 120, // Model has 0.01 internal scale, so 1.2 -> 120
+        scale: 44, // Proportional scaling: 120 * (0.55 / 1.5) = 44
         rotationOffset: [0, 0, 0], // Face forward (net 180 deg with component rotation)
         positionOffset: [0, -0.1, 0] // Lower to reduce gap
     },
@@ -62,7 +62,7 @@ export const VEHICLES: VehicleConfig[] = [
         description: 'Speed. I am speed.',
         type: 'gltf',
         path: '/models/cars/lightning_mcqueen_cars_3/scene.gltf',
-        scale: 1.5,
+        scale: 0.55,
         rotationOffset: [0, 0, 0],
         positionOffset: [0, -0.6, 0]
     },
@@ -72,7 +72,7 @@ export const VEHICLES: VehicleConfig[] = [
         description: 'Next gen speed.',
         type: 'gltf',
         path: '/models/cars/mcqueenbalcjkm/scene.gltf',
-        scale: 1.5, // Reduced from 80 to 1.5 based on user feedback
+        scale: 0.55, // Reduced from 1.5 to 0.55
         rotationOffset: [0, 0, 0], // Face forward (net 180 deg with component rotation)
         positionOffset: [0, -0.6, 0] // Same as Lightning
     }
@@ -95,13 +95,13 @@ export const MAPS: MapConfig[] = [
         description: 'Burnout Dominator Tuscan View. Sun-baked Italian roads with sweeping landscapes.',
         type: 'gltf',
         path: '/models/maps/burnout_dominator_tuscan_view/scene.gltf',
-        scale: 1,
+        scale: 25, // Scaled up to make the road width correct for the cars
         rotationOffset: [0, 0, 0],
         positionOffset: [0, 0, 0],
         fogColor: '#c8b99a',
         fogNear: 50,
         fogFar: 500,
-        spawnPosition: [0, 5, 0],
+        spawnPosition: [0, 50, 0], // Adjusted spawn height to match scaled town
     },
 ];
 
@@ -219,3 +219,8 @@ export const useGameStore = create<GameState>((set) => ({
     selectedMap: 'tuscan_view', // Default to Tuscan View map
     setSelectedMap: (id: string) => set({ selectedMap: id }),
 }));
+
+// Expose store for debugging and browser automation
+if (typeof window !== 'undefined') {
+    (window as any).useGameStore = useGameStore;
+}

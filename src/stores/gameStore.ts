@@ -75,6 +75,16 @@ export const VEHICLES: VehicleConfig[] = [
         scale: 0.55, // Reduced from 1.5 to 0.55
         rotationOffset: [0, 0, 0], // Face forward (net 180 deg with component rotation)
         positionOffset: [0, -0.6, 0] // Same as Lightning
+    },
+    {
+        id: 'milano_95',
+        name: 'Milano 95',
+        description: 'Milano 95 Racemod. Agile sports coupe built for precision racing.',
+        type: 'gltf',
+        path: '/models/cars/milano_95_racemod_-_low_poly_model/scene.gltf',
+        scale: 0.55,
+        rotationOffset: [0, 0, 0],
+        positionOffset: [0, -0.3, 0]
     }
 ];
 
@@ -109,13 +119,13 @@ export const MAPS: MapConfig[] = [
         description: 'Nicholas-3D Drift Race Track. Perfect for high-speed slides and tight corners.',
         type: 'gltf',
         path: '/models/maps/drift_race_track_free/scene.gltf',
-        scale: 20,
+        scale: 0.3,
         rotationOffset: [0, 0, 0],
         positionOffset: [0, 0, 0],
         fogColor: '#a3c2c4',
-        fogNear: 40,
-        fogFar: 400,
-        spawnPosition: [10.5, 2.0, -43.0],
+        fogNear: 15,
+        fogFar: 150,
+        spawnPosition: [0, 1.5, 0],
     },
 ];
 

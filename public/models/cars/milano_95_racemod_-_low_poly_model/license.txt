@@ -1,0 +1,8 @@
+Model Information:
+* title:	Milano '95 Racemod - Low poly model
+* source:	https://sketchfab.com/3d-models/milano-95-racemod-low-poly-model-e1213e8029bf40738987f3f3230d542e
+* author:	Daniel Zhabotinsky (https://sketchfab.com/DanielZhabotinsky)
+
+Model License:
+* license type:	SKETCHFAB Standard (https://sketchfab.com/licenses)
+* requirements:	Under basic restrictions, use worldwide, on all types of media, commercially or not, and in all types of derivative works

@@ -35,7 +35,8 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
 
     useEffect(() => {
         (window as any).vehiclePhysics = physics;
-    }, [physics]);
+        (window as any).vehicleController = controller;
+    }, [physics, controller]);
 
     const engineAudio = useMemo(() => new EngineAudio(), []);
 

@@ -2,6 +2,23 @@ import { Vector3, Quaternion, Raycaster, Object3D } from 'three';
 import type { InputState } from './VehicleController';
 import { clamp } from 'three/src/math/MathUtils.js';
 
+// Car half-extents for collision probing
+const CAR_HALF_WIDTH = 1.15;   // Half-width of the car (meters)
+const CAR_HALF_LENGTH = 1.6;   // Half-length of the car (meters)
+const CAR_COLLISION_HEIGHT = 0.5; // Height of the horizontal rays from car base
+
+// How far to probe for nearby walls
+const COLLISION_PROBE_DIST = 1.5;
+
+// Minimum penetration depth before we push back (avoids micro-jitters)
+const MIN_PENETRATION = 0.02;
+
+// Bounciness factor (0 = no bounce, 1 = full elastic bounce)
+const RESTITUTION = 0.15;
+
+// Speed reduction factor on collision (0 = full stop, 1 = no reduction)
+const COLLISION_SPEED_DAMPING = 0.35;
+
 export class VehiclePhysics {
     public position: Vector3 = new Vector3(0, 5, 0);
     public rotation: Quaternion = new Quaternion();
@@ -41,6 +58,36 @@ export class VehiclePhysics {
     private rayOrigin: Vector3 = new Vector3();
     private rayDir: Vector3 = new Vector3(0, -1, 0);
 
+    // --- Horizontal Collision Detection ---
+    // A separate raycaster dedicated to sideways / wall collision
+    private collisionRaycaster: Raycaster = new Raycaster();
+
+    // 8 probe directions in LOCAL car space (forward = -Z in Three.js)
+    // Each entry: [localOriginOffset, localDirection, probeRadius]
+    // We cast from car-body-edge outward in each direction
+    private collisionProbes: Array<{
+        originOffset: Vector3;  // Where the ray starts (local space offset from car center)
+        direction: Vector3;     // Direction of the ray (local space, normalized)
+        reach: number;          // How far beyond the origin to check
+    }> = [
+        // --- Front face ---
+        { originOffset: new Vector3(0, CAR_COLLISION_HEIGHT, -CAR_HALF_LENGTH), direction: new Vector3(0, 0, -1), reach: COLLISION_PROBE_DIST },
+        // --- Rear face ---
+        { originOffset: new Vector3(0, CAR_COLLISION_HEIGHT,  CAR_HALF_LENGTH), direction: new Vector3(0, 0,  1), reach: COLLISION_PROBE_DIST },
+        // --- Left face ---
+        { originOffset: new Vector3(-CAR_HALF_WIDTH, CAR_COLLISION_HEIGHT, 0), direction: new Vector3(-1, 0, 0), reach: COLLISION_PROBE_DIST },
+        // --- Right face ---
+        { originOffset: new Vector3( CAR_HALF_WIDTH, CAR_COLLISION_HEIGHT, 0), direction: new Vector3( 1, 0, 0), reach: COLLISION_PROBE_DIST },
+        // --- Front-Left corner ---
+        { originOffset: new Vector3(-CAR_HALF_WIDTH, CAR_COLLISION_HEIGHT, -CAR_HALF_LENGTH), direction: new Vector3(-0.707, 0, -0.707), reach: COLLISION_PROBE_DIST * 0.8 },
+        // --- Front-Right corner ---
+        { originOffset: new Vector3( CAR_HALF_WIDTH, CAR_COLLISION_HEIGHT, -CAR_HALF_LENGTH), direction: new Vector3( 0.707, 0, -0.707), reach: COLLISION_PROBE_DIST * 0.8 },
+        // --- Rear-Left corner ---
+        { originOffset: new Vector3(-CAR_HALF_WIDTH, CAR_COLLISION_HEIGHT,  CAR_HALF_LENGTH), direction: new Vector3(-0.707, 0,  0.707), reach: COLLISION_PROBE_DIST * 0.8 },
+        // --- Rear-Right corner ---
+        { originOffset: new Vector3( CAR_HALF_WIDTH, CAR_COLLISION_HEIGHT,  CAR_HALF_LENGTH), direction: new Vector3( 0.707, 0,  0.707), reach: COLLISION_PROBE_DIST * 0.8 },
+    ];
+
     // Ground detection state
     private onGround: boolean = false;
     private isOnRoad: boolean = false;
@@ -62,6 +109,7 @@ export class VehiclePhysics {
 
     constructor() {
         this.raycaster.far = 2.0; // Shorter ray for suspension
+        this.collisionRaycaster.far = COLLISION_PROBE_DIST + 0.1;
     }
 
     update(delta: number, input: InputState, terrainObjects: Object3D[]) {
@@ -353,6 +401,12 @@ export class VehiclePhysics {
         this.position.add(this.dummyVec);
 
         // ============================================
+        // HORIZONTAL COLLISION DETECTION & RESPONSE
+        // Prevent car from passing through walls, buildings, road barriers
+        // ============================================
+        this._resolveHorizontalCollisions(terrainObjects);
+
+        // ============================================
         // GROUND SAFETY NET - Prevent falling into void
         // ============================================
 
@@ -407,6 +461,103 @@ export class VehiclePhysics {
 
             // Apply to current rotation
             this.rotation.premultiply(slerpedCorrection);
+        }
+    }
+
+    // ============================================================
+    // HORIZONTAL COLLISION RESOLUTION
+    // Casts rays in 8 directions around the car in world space.
+    // When a wall/building/barrier is hit, the car is pushed back
+    // and its speed is reduced proportionally.
+    // ============================================================
+    private _resolveHorizontalCollisions(terrainObjects: Object3D[]): void {
+        if (terrainObjects.length === 0) return;
+
+        // Accumulate total push-back across all probes this frame
+        const totalPushback = new Vector3();
+        let hitCount = 0;
+        let maxPenetration = 0;
+
+        // Temp vectors (reuse to avoid GC pressure)
+        const worldOrigin = new Vector3();
+        const worldDir = new Vector3();
+
+        for (const probe of this.collisionProbes) {
+            // -- Transform probe origin to world space --
+            worldOrigin
+                .copy(probe.originOffset)
+                .applyQuaternion(this.rotation)
+                .add(this.position);
+
+            // -- Transform probe direction to world space --
+            worldDir
+                .copy(probe.direction)
+                .applyQuaternion(this.rotation)
+                .normalize();
+
+            // -- Clamp ray far to the probe reach --
+            this.collisionRaycaster.far = probe.reach;
+            this.collisionRaycaster.set(worldOrigin, worldDir);
+
+            const hits = this.collisionRaycaster.intersectObjects(terrainObjects, true);
+
+            if (hits.length > 0) {
+                const hit = hits[0];
+
+                // Skip water meshes — car should float, not bounce off water surface sideways
+                let isWater = false;
+                const mat = (hit.object as any).material;
+                if (mat) {
+                    const checkWater = (m: any) =>
+                        m && (m.name === 'material_047_0' || (hit.object.name && hit.object.name.includes('material_100_0')));
+                    isWater = Array.isArray(mat) ? mat.some(checkWater) : checkWater(mat);
+                }
+                if (isWater) continue;
+
+                // Skip the flat ground plane (we only want vertical walls/barriers)
+                // Flat geometry normals point mostly upward (Y > 0.7 means nearly horizontal surface)
+                if (hit.face && Math.abs(hit.face.normal.y) > 0.7) continue;
+
+                // Penetration depth: how far inside the object we'd be
+                const penetration = probe.reach - hit.distance;
+                if (penetration < MIN_PENETRATION) continue;
+
+                // Push back opposite to the ray direction
+                // The push magnitude equals the penetration depth
+                const pushVec = worldDir.clone().multiplyScalar(-penetration);
+                totalPushback.add(pushVec);
+
+                if (penetration > maxPenetration) {
+                    maxPenetration = penetration;
+                }
+                hitCount++;
+            }
+        }
+
+        // -- Apply accumulated push-back --
+        if (hitCount > 0) {
+            // Average push-back across hits to avoid over-correction when multiple probes fire
+            totalPushback.divideScalar(hitCount);
+
+            // Apply position correction
+            this.position.add(totalPushback);
+
+            // Apply velocity response: reflect the horizontal velocity component along push direction
+            const pushDir = totalPushback.clone().normalize();
+
+            // Project velocity onto push direction
+            const velAlongPush = this.velocity.dot(pushDir);
+            if (velAlongPush < 0) {
+                // Only apply if velocity is going INTO the wall
+                // Subtract the wall-penetrating component and add a small bounce
+                const correction = pushDir.clone().multiplyScalar(-velAlongPush * (1 + RESTITUTION));
+                this.velocity.add(correction);
+            }
+
+            // Reduce speed on collision — sharper hits lose more speed
+            const impactStrength = Math.min(maxPenetration / COLLISION_PROBE_DIST, 1.0);
+            const speedReduction = 1.0 - impactStrength * (1.0 - COLLISION_SPEED_DAMPING);
+            this.speed *= speedReduction;
         }
     }
 }

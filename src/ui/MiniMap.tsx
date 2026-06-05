@@ -135,45 +135,50 @@ export function MiniMap() {
 
         // Draw Road
         if (roadPath && roadPath.length > 0) {
+            ctx.strokeStyle = isExpanded ? '#FFFFFF' : '#AAAAAA';
+            ctx.lineWidth = isProcedural ? 15 : 12; // Real world meters width
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            ctx.beginPath();
+            let first = true;
+            // Draw points; downsample slightly on procedural for perf, draw all on GLTF since they are already downsampled centroids
+            const step = isProcedural ? 2 : 1;
+            for (let i = 0; i < roadPath.length; i += step) {
+                const p = roadPath[i];
+                if (first) {
+                    ctx.moveTo(p.x, p.z);
+                    first = false;
+                } else {
+                    ctx.lineTo(p.x, p.z);
+                }
+            }
+            
+            // Ensure last point is drawn for procedural map
+            if (isProcedural && roadPath.length > 1) {
+                const last = roadPath[roadPath.length - 1];
+                ctx.lineTo(last.x, last.z);
+            }
+
+            // For closed loop GLTF tracks (like drift_track), close the path if first and last are near
+            if (!isProcedural && roadPath.length > 2) {
+                const start = roadPath[0];
+                const end = roadPath[roadPath.length - 1];
+                if (start.distanceToSquared(end) < 2500) { // <50 meters apart
+                    ctx.closePath();
+                }
+            }
+
+            ctx.stroke();
+
+            // Center dash line (Procedural only)
             if (isProcedural) {
-                ctx.strokeStyle = isExpanded ? '#FFFFFF' : '#AAAAAA';
-                ctx.lineWidth = 15; // Real world meters width
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-
-                ctx.beginPath();
-                let first = true;
-                for (let i = 0; i < roadPath.length; i += 2) { // Skip every other point for perf
-                    const p = roadPath[i];
-                    if (first) {
-                        ctx.moveTo(p.x, p.z);
-                        first = false;
-                    } else {
-                        ctx.lineTo(p.x, p.z);
-                    }
-                }
-                if (roadPath.length > 1) { // Ensure last point
-                    const last = roadPath[roadPath.length - 1];
-                    ctx.lineTo(last.x, last.z);
-                }
-                ctx.stroke();
-
-                // Center line
                 ctx.strokeStyle = isExpanded ? '#444444' : '#FFFFFF';
                 ctx.lineWidth = 1;
                 if (!isExpanded) {
                     ctx.setLineDash([10, 10]);
                     ctx.stroke();
                     ctx.setLineDash([]);
-                }
-            } else {
-                // Draw GLTF map point cloud as a sci-fi radar visual
-                ctx.fillStyle = isExpanded ? 'rgba(255, 255, 255, 0.45)' : 'rgba(255, 255, 255, 0.65)';
-                const dotSize = isExpanded ? 5 / scale : 3.5 / scale;
-
-                for (let i = 0; i < roadPath.length; i++) {
-                    const p = roadPath[i];
-                    ctx.fillRect(p.x - dotSize / 2, p.z - dotSize / 2, dotSize, dotSize);
                 }
             }
         }

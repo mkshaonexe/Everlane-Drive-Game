@@ -4,14 +4,43 @@ import { useGameStore, MAPS } from '../stores/gameStore';
 import { getAssetPath } from '../utils/paths';
 import { Group, Vector3 } from 'three';
 
+function sortPointsNearestNeighbor(points: Vector3[], startPoint: Vector3): Vector3[] {
+    if (points.length === 0) return [];
+    
+    const unvisited = [...points];
+    const sorted: Vector3[] = [];
+    
+    let current = startPoint.clone();
+    
+    while (unvisited.length > 0) {
+        let nearestIdx = 0;
+        let nearestDistSq = current.distanceToSquared(unvisited[0]);
+        
+        for (let i = 1; i < unvisited.length; i++) {
+            const distSq = current.distanceToSquared(unvisited[i]);
+            if (distSq < nearestDistSq) {
+                nearestDistSq = distSq;
+                nearestIdx = i;
+            }
+        }
+        
+        // Move nearest to sorted list
+        current = unvisited.splice(nearestIdx, 1)[0];
+        sorted.push(current);
+    }
+    
+    return sorted;
+}
+
 interface GLTFMapModelProps {
     path: string;
     scale?: number;
     rotation?: [number, number, number];
     position?: [number, number, number];
+    spawnPosition?: [number, number, number];
 }
 
-function GLTFMapModel({ path, scale = 1, rotation = [0, 0, 0], position = [0, 0, 0] }: GLTFMapModelProps) {
+function GLTFMapModel({ path, scale = 1, rotation = [0, 0, 0], position = [0, 0, 0], spawnPosition = [0, 5, 0] }: GLTFMapModelProps) {
     const { scene } = useGLTF(getAssetPath(path));
     const clonedScene = useMemo(() => scene.clone(), [scene]);
 
@@ -24,7 +53,7 @@ function GLTFMapModel({ path, scale = 1, rotation = [0, 0, 0], position = [0, 0,
         if (position) clonedScene.position.fromArray(position);
         clonedScene.updateMatrixWorld(true);
 
-        const points: Vector3[] = [];
+        const rawPoints: Vector3[] = [];
         
         // Traverse and extract vertices
         clonedScene.traverse((child: any) => {
@@ -49,7 +78,7 @@ function GLTFMapModel({ path, scale = 1, rotation = [0, 0, 0], position = [0, 0,
                     const sizeZ = bbox.max.z - bbox.min.z;
                     
                     const name = child.name.toLowerCase();
-                    const isExcluded = name.includes('building') || name.includes('wall') || name.includes('house') || name.includes('barrier') || name.includes('prop') || name.includes('chevron') || name.includes('tree') || name.includes('light') || name.includes('sign') || name.includes('pole') || name.includes('sky');
+                    const isExcluded = name.includes('building') || name.includes('wall') || name.includes('house') || name.includes('barrier') || name.includes('prop') || name.includes('chevron') || name.includes('tree') || name.includes('light') || name.includes('sign') || name.includes('pole') || name.includes('sky') || name.includes('water');
                     
                     // A flat mesh has small Y height compared to horizontal size
                     const isFlat = sizeY < 15.0 && (sizeX > 5.0 || sizeZ > 5.0);
@@ -63,17 +92,47 @@ function GLTFMapModel({ path, scale = 1, rotation = [0, 0, 0], position = [0, 0,
                                 positionAttr.getZ(i)
                             );
                             tempV.applyMatrix4(child.matrixWorld);
-                            points.push(new Vector3(tempV.x, tempV.y, tempV.z));
+                            
+                            // Skip points that are clearly below road level (like river beds)
+                            // For Tuscan Vista, roads are roughly above Y = 30
+                            // Let's filter out points below a reasonable threshold if needed,
+                            // but grid clustering already helps. Let's keep Y > 10 to exclude deep water beds.
+                            if (tempV.y > 10.0) {
+                                rawPoints.push(new Vector3(tempV.x, tempV.y, tempV.z));
+                            }
                         }
                     }
                 }
             }
         });
 
-        console.log(`Extracted ${points.length} road map points from GLTF`);
-        useGameStore.getState().setRoadPath(points);
+        // Grid-based voxelization to get centerline centroids
+        const grid: { [key: string]: { sum: Vector3, count: number } } = {};
+        const gridSize = 20; // 20m cells
+        
+        for (const p of rawPoints) {
+            const gx = Math.floor(p.x / gridSize);
+            const gz = Math.floor(p.z / gridSize);
+            const key = `${gx}_${gz}`;
+            if (!grid[key]) {
+                grid[key] = { sum: new Vector3(0, 0, 0), count: 0 };
+            }
+            grid[key].sum.add(p);
+            grid[key].count++;
+        }
+        
+        const centroids = Object.values(grid).map(cell => 
+            cell.sum.divideScalar(cell.count)
+        );
+        
+        // Sort centroids using Nearest Neighbor from spawnPosition
+        const spawnV = new Vector3(...spawnPosition);
+        const sortedPoints = sortPointsNearestNeighbor(centroids, spawnV);
 
-    }, [clonedScene, scale, rotation, position]);
+        console.log(`Extracted ${rawPoints.length} raw vertices, generated ${sortedPoints.length} sorted road centerline points from GLTF`);
+        useGameStore.getState().setRoadPath(sortedPoints);
+
+    }, [clonedScene, scale, rotation, position, spawnPosition]);
 
     return (
         <primitive
@@ -128,6 +187,7 @@ export function GLTFMap({ terrainGroupRef }: GLTFMapProps) {
                     scale={mapConfig.scale}
                     rotation={mapConfig.rotationOffset}
                     position={mapConfig.positionOffset}
+                    spawnPosition={mapConfig.spawnPosition}
                 />
             </Suspense>
         </group>

@@ -1,0 +1,11 @@
+Model Information:
+* title:	1997 VeilSide Fortune Mazda RX-7 FD Tokyo Drift
+* source:	https://sketchfab.com/3d-models/1997-veilside-fortune-mazda-rx-7-fd-tokyo-drift-7db6bd58bb8f405abeb5ed02bcabc960
+* author:	Ddiaz Design (https://sketchfab.com/ddiaz-design)
+
+Model License:
+* license type:	CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)
+* requirements:	Author must be credited. No commercial use. Modified versions must have the same license.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "1997 VeilSide Fortune Mazda RX-7 FD Tokyo Drift" (https://sketchfab.com/3d-models/1997-veilside-fortune-mazda-rx-7-fd-tokyo-drift-7db6bd58bb8f405abeb5ed02bcabc960) by Ddiaz Design (https://sketchfab.com/ddiaz-design) licensed under CC-BY-NC-SA-4.0 (http://creativecommons.org/licenses/by-nc-sa/4.0/)

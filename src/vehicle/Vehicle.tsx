@@ -48,7 +48,6 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
 
     const speedRef = useRef(0);
     const lastStoreUpdate = useRef(0);
-    const positionBuffer = useRef(new Vector3());
 
     useFrame((_state, delta) => {
         if (!groupRef.current) return;
@@ -84,9 +83,7 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         if (now - lastStoreUpdate.current > 50) {
             setSpeed(speed);
             addDistance(speed * dt); // Distance = Speed * Time
-            // Reuse positionBuffer to avoid creating new Vector3 every frame (GC pressure)
-            positionBuffer.current.copy(physics.position);
-            setPosition(positionBuffer.current);
+            setPosition(physics.position.clone());
             lastStoreUpdate.current = now;
         }
 

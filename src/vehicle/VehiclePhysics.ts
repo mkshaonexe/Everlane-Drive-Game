@@ -396,15 +396,19 @@ export class VehiclePhysics {
         this.velocity.z = horizontalVel.z;
         // Y is kept from suspension calculation
 
-        // Move Position
+        // Proposed new position before committing movement
+        const proposedPosition = this.position.clone();
         this.dummyVec.copy(this.velocity).multiplyScalar(delta);
-        this.position.add(this.dummyVec);
+        proposedPosition.add(this.dummyVec);
 
         // ============================================
         // HORIZONTAL COLLISION DETECTION & RESPONSE
         // Prevent car from passing through walls, buildings, road barriers
         // ============================================
-        this._resolveHorizontalCollisions(terrainObjects);
+        this._resolveHorizontalCollisions(proposedPosition, terrainObjects);
+
+        // Commit final corrected position
+        this.position.copy(proposedPosition);
 
         // ============================================
         // GROUND SAFETY NET - Prevent falling into void
@@ -470,7 +474,7 @@ export class VehiclePhysics {
     // When a wall/building/barrier is hit, the car is pushed back
     // and its speed is reduced proportionally.
     // ============================================================
-    private _resolveHorizontalCollisions(terrainObjects: Object3D[]): void {
+    private _resolveHorizontalCollisions(proposedPosition: Vector3, terrainObjects: Object3D[]): void {
         if (terrainObjects.length === 0) return;
 
         // Accumulate total push-back across all probes this frame
@@ -482,55 +486,66 @@ export class VehiclePhysics {
         const worldOrigin = new Vector3();
         const worldDir = new Vector3();
 
-        for (const probe of this.collisionProbes) {
-            // -- Transform probe origin to world space --
-            worldOrigin
-                .copy(probe.originOffset)
-                .applyQuaternion(this.rotation)
-                .add(this.position);
+        // Inset value to shift ray origins inward, preventing failure when slightly inside the wall
+        const INSET = 1.0;
+        const COLLISION_HEIGHTS = [0.25, 0.65, 1.05];
 
-            // -- Transform probe direction to world space --
-            worldDir
-                .copy(probe.direction)
-                .applyQuaternion(this.rotation)
-                .normalize();
+        for (const height of COLLISION_HEIGHTS) {
+            for (const probe of this.collisionProbes) {
+                // -- Transform probe direction to world space --
+                worldDir
+                    .copy(probe.direction)
+                    .applyQuaternion(this.rotation)
+                    .normalize();
 
-            // -- Clamp ray far to the probe reach --
-            this.collisionRaycaster.far = probe.reach;
-            this.collisionRaycaster.set(worldOrigin, worldDir);
+                // -- Probe offset with customized height --
+                const localOrigin = probe.originOffset.clone();
+                localOrigin.y = height;
 
-            const hits = this.collisionRaycaster.intersectObjects(terrainObjects, true);
+                // -- Transform probe origin to world space and shift back by INSET along worldDir --
+                worldOrigin
+                    .copy(localOrigin)
+                    .applyQuaternion(this.rotation)
+                    .add(proposedPosition)
+                    .addScaledVector(worldDir, -INSET);
 
-            if (hits.length > 0) {
-                const hit = hits[0];
+                // -- Clamp ray far to the probe reach + INSET --
+                this.collisionRaycaster.far = probe.reach + INSET;
+                this.collisionRaycaster.set(worldOrigin, worldDir);
 
-                // Skip water meshes — car should float, not bounce off water surface sideways
-                let isWater = false;
-                const mat = (hit.object as any).material;
-                if (mat) {
-                    const checkWater = (m: any) =>
-                        m && (m.name === 'material_047_0' || (hit.object.name && hit.object.name.includes('material_100_0')));
-                    isWater = Array.isArray(mat) ? mat.some(checkWater) : checkWater(mat);
+                const hits = this.collisionRaycaster.intersectObjects(terrainObjects, true);
+
+                if (hits.length > 0) {
+                    const hit = hits[0];
+
+                    // Skip water meshes — car should float, not bounce off water surface sideways
+                    let isWater = false;
+                    const mat = (hit.object as any).material;
+                    if (mat) {
+                        const checkWater = (m: any) =>
+                            m && (m.name === 'material_047_0' || (hit.object.name && hit.object.name.includes('material_100_0')));
+                        isWater = Array.isArray(mat) ? mat.some(checkWater) : checkWater(mat);
+                    }
+                    if (isWater) continue;
+
+                    // Skip the flat ground plane (we only want vertical walls/barriers)
+                    // Flat geometry normals point mostly upward (Y > 0.7 means nearly horizontal surface)
+                    if (hit.face && Math.abs(hit.face.normal.y) > 0.7) continue;
+
+                    // Penetration depth: how far inside the object we'd be
+                    const penetration = (probe.reach + INSET) - hit.distance;
+                    if (penetration < MIN_PENETRATION) continue;
+
+                    // Push back opposite to the ray direction
+                    // The push magnitude equals the penetration depth
+                    const pushVec = worldDir.clone().multiplyScalar(-penetration);
+                    totalPushback.add(pushVec);
+
+                    if (penetration > maxPenetration) {
+                        maxPenetration = penetration;
+                    }
+                    hitCount++;
                 }
-                if (isWater) continue;
-
-                // Skip the flat ground plane (we only want vertical walls/barriers)
-                // Flat geometry normals point mostly upward (Y > 0.7 means nearly horizontal surface)
-                if (hit.face && Math.abs(hit.face.normal.y) > 0.7) continue;
-
-                // Penetration depth: how far inside the object we'd be
-                const penetration = probe.reach - hit.distance;
-                if (penetration < MIN_PENETRATION) continue;
-
-                // Push back opposite to the ray direction
-                // The push magnitude equals the penetration depth
-                const pushVec = worldDir.clone().multiplyScalar(-penetration);
-                totalPushback.add(pushVec);
-
-                if (penetration > maxPenetration) {
-                    maxPenetration = penetration;
-                }
-                hitCount++;
             }
         }
 
@@ -539,8 +554,8 @@ export class VehiclePhysics {
             // Average push-back across hits to avoid over-correction when multiple probes fire
             totalPushback.divideScalar(hitCount);
 
-            // Apply position correction
-            this.position.add(totalPushback);
+            // Apply position correction to the proposed position
+            proposedPosition.add(totalPushback);
 
             // Apply velocity response: reflect the horizontal velocity component along push direction
             const pushDir = totalPushback.clone().normalize();

@@ -60,6 +60,9 @@ export class VehicleController {
             case 'KeyR':
                 this.input.reset = true;
                 break;
+            case 'KeyC':
+                useGameStore.getState().cycleCameraPreset();
+                break;
             case 'ShiftLeft':
             case 'ShiftRight':
                 this.input.boost = true;

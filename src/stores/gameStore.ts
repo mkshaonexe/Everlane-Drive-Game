@@ -144,6 +144,8 @@ interface GameState {
 
     // Camera Zoom State
     cameraDistance: number;
+    cameraPresetIndex: number;
+    cycleCameraPreset: () => void;
 
     setSpeed: (speed: number) => void;
     addDistance: (delta: number) => void;
@@ -194,6 +196,7 @@ export const useGameStore = create<GameState>((set) => ({
 
     // Camera Zoom Initial State (default distance from vehicle)
     cameraDistance: 8,
+    cameraPresetIndex: 0,
 
     // Road Data Initial State
     roadPath: [],
@@ -226,6 +229,23 @@ export const useGameStore = create<GameState>((set) => ({
         // Clamp zoom distance between 3 and 50 units (increased range)
         cameraDistance: Math.max(3, Math.min(50, state.cameraDistance + delta)),
     })),
+
+    cycleCameraPreset: () => set((state) => {
+        const CAMERA_PRESETS = [
+            { distance: 8, pitch: 0.1, yaw: 0 },       // Chase (Default)
+            { distance: 14, pitch: 0.25, yaw: 0 },     // Action / Far
+            { distance: 3.5, pitch: 0.05, yaw: 0 },    // Near / Bumper
+            { distance: 20, pitch: 0.8, yaw: 0 }       // Birds Eye
+        ];
+        const nextIndex = (state.cameraPresetIndex + 1) % CAMERA_PRESETS.length;
+        const preset = CAMERA_PRESETS[nextIndex];
+        return {
+            cameraPresetIndex: nextIndex,
+            cameraDistance: preset.distance,
+            freeLookPitch: preset.pitch,
+            freeLookYaw: preset.yaw
+        };
+    }),
 
     // Road Data Actions
     setRoadPath: (path) => set({ roadPath: path }),

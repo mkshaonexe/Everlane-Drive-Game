@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { Stage, OrbitControls } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import { useGameStore, VEHICLES } from '../stores/gameStore';
 import { VehicleModel } from '../vehicle/VehicleModel';
 import { Suspense, useState } from 'react';
@@ -107,16 +107,24 @@ export function VehicleSelect({ onBack }: { onBack: () => void }) {
                                 <LoadingSpinner />
                             </div>
                         }>
-                            <Canvas shadows dpr={[1, 2]} camera={{ position: [4, 2, 4], fov: 45 }}>
-                                <Stage environment="city" intensity={0.5}>
+                            <Canvas shadows dpr={[1, 2]} camera={{ position: [5, 2.5, 5], fov: 40 }}>
+                                <ambientLight intensity={0.8} />
+                                <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
+                                <directionalLight position={[-10, 5, -5]} intensity={0.4} />
+                                <pointLight position={[0, 3, 0]} intensity={0.8} />
+                                
+                                <group position={[0, -0.5, 0]}>
                                     <VehicleModel vehicleId={previewVehicleId} />
-                                </Stage>
+                                </group>
+
                                 <OrbitControls
-                                    autoRotate={false} // Disabled to prevent shaking/jitter
-                                    enableZoom={false}
+                                    target={[0, 0, 0]}
+                                    autoRotate={true}
+                                    autoRotateSpeed={2}
+                                    enableZoom={true}
                                     enablePan={false}
-                                    minPolarAngle={0}
-                                    maxPolarAngle={Math.PI / 2}
+                                    minPolarAngle={0.2}
+                                    maxPolarAngle={Math.PI / 2 - 0.1}
                                 />
                             </Canvas>
                         </Suspense>

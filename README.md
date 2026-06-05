@@ -1,92 +1,93 @@
-# Everlane Drive
- 
-A high-fidelity browser-based 3D driving game, **Everlane Drive**, built with **React**, **Three.js (React Three Fiber)**, and **TypeScript**.
+# 🚗 Everlane Drive
 
-![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)
-![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)
-![Three.js](https://img.shields.io/badge/threejs-black?style=for-the-badge&logo=three.js&logoColor=white)
-![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)
+A high-fidelity browser-based 3D driving game built with **React**, **Three.js (React Three Fiber)**, and **TypeScript**.
 
-## 🚗 Project Overview
+[![Vite](https://img.shields.io/badge/vite-%23646CFF.svg?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev)
+[![React](https://img.shields.io/badge/react-%2320232a.svg?style=for-the-badge&logo=react&logoColor=%2361DAFB)](https://react.dev)
+[![Three.js](https://img.shields.io/badge/threejs-black?style=for-the-badge&logo=three.js&logoColor=white)](https://threejs.org)
+[![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Deploy to GitHub Pages](https://github.com/mkshaonexe/Everlane-Drive-Game/actions/workflows/deploy.yml/badge.svg)](https://github.com/mkshaonexe/Everlane-Drive-Game/actions/workflows/deploy.yml)
 
-This project aims to replicate the minimalist, soothing, yet technically complex experience of driving through infinite procedural landscapes. It focuses on high-quality rendering, smooth vehicle physics, and intelligent world generation. The infinite terrain generator uses multi-octave noise to create varied landscapes, while the road system adapts dynamically to the terrain contours.
+## 🎮 Play Live Demo
+👉 **[Everlane Drive Game Live Demo](https://mkshaonexe.github.io/Everlane-Drive-Game/)**
 
-## 🏗️ Technical Architecture
+---
+
+## 🏎️ Features & Highlights
+
+- **Infinite Procedural Terrain**: Dynamic chunk generation using multi-octave Simplex noise for organic-feeling hills and valleys.
+- **Adaptive Road Network**: A procedural road pathing system that conforms to terrain elevations.
+- **Realistic Vehicle Physics**: 
+  - Independent 4-wheel raycast suspension model.
+  - Spring-damper physics ($F = kx - dv$) for natural body roll, weight distribution, and damping.
+  - Variable throttle with Turbo Boost (`Shift`).
+  - Active handbrake drifting.
+  - Off-road friction/handling penalty system.
+- **Garage Vehicle Selector**:
+  - Interactive 3D showroom to select and configure different vehicle classes.
+  - Real-time animated loading screen showing the asset downloading progress, size, and status.
+  - Automatic suspension stabilization when showcasing cars in the garage.
+- **Atmospheric Environments**: Mood lighting, fog, and custom sky boxes depending on the selected track.
+
+---
+
+## 🛠️ Technical Architecture
 
 The project is structured into modular systems for maintainability and scalability:
 
--   **`src/core`**: Main game engine loop, world management, and dynamic loading.
--   **`src/terrain`**: Procedural generation logic using Simplex noise for heightmaps and infinite chunk management.
--   **`src/vehicle`**: The "Care Model" - Physics engine, vehicle controller, and camera logic.
--   **`src/graphics`**: Visual systems including mood lighting, dynamic weather (fog, time of day), and vegetation rendering.
--   **`src/ui`**: React-based HUD overlay, menus, and debug tools.
--   **`src/stores`**: State management using Zustand for high-frequency game data.
+- **`src/core`**: Main game engine loop, world management, and dynamic loading.
+- **`src/terrain`**: Procedural generation logic using Simplex noise for heightmaps and infinite chunk management.
+- **`src/vehicle`**: The vehicle physics engine, steering controls, and custom spring-damper suspension solver.
+- **`src/graphics`**: Lighting, environment controls, fog, and foliage systems.
+- **`src/ui`**: React HUD overlay, map settings menu, vehicle selection screen, and assets preloader.
+- **`src/stores`**: High-frequency physics and game state using Zustand.
 
-## 🏎️ Care Model (Vehicle Physics & Implementation)
+---
 
-The vehicle implementation (The "Care Model") is designed to balance arcade fun with realistic weight and suspension feel.
+## 🎹 Keyboard Controls
 
-### Physics Engine (`VehiclePhysics.ts`)
-The car allows for a "semi-arcade" driving feel using a custom raycast suspension system rather than a generic physics engine body.
--   **Raycast Suspension**: 4-wheel independent rays cast downwards to detect terrain height.
--   **Spring-Damper Model**: Calculates compression forces ($F = kx - dv$) to simulate suspension travel and bounce.
--   **Gravity & Ground Detection**: Applies gravity when airborne; implements a safety net to respawn the car if it falls through the map.
+| Key | Action |
+| --- | --- |
+| **W** | Throttle (Forward) |
+| **S** | Brake / Reverse |
+| **A / D** | Steer Left / Right |
+| **Space** | Handbrake (Drift) |
+| **Shift** | Turbo Boost |
+| **R** | Respawn on Track |
 
-### Driving Dynamics
--   **Variable Acceleration**:
-    -   **Linear input**: Gentle acceleration for cruising.
-    -   **Shift modifier**: Aggressive power delivery for racing.
--   **Braking ('S' Key)**:
-    -   At speed: Applies strong braking force.
-    -   At standstill: Transitions to reverse gear (smart shifting).
--   **Handbrake (Space)**: Applies immediate, strong deceleration force for drifting or emergency stops.
--   **Off-Road Penalties**: Driving off the road surface reduces speed cap by 40% and reduces handling (turn speed) to simulate traction loss.
-
-### Available Vehicles
-- **Standard EV**: Balanced performance, modern look.
-- **Drift King**: Tuned for sliding, higher torque.
-- **Storm**: Heavy duty, stable tracking.
-- **Lightning**: High top speed, aggressive aero.
-
-### Controls
--   **W**: Throttle (Forward)
--   **S**: Brake / Reverse
--   **A / D**: Steer Left / Right
--   **Space**: Handbrake
--   **Shift**: Turbo Boost
--   **R**: Respawn on track
+---
 
 ## 🚀 Getting Started
 
 ### Prerequisites
--   Node.js (v18 or higher)
--   npm or yarn
+- Node.js (v18 or higher)
+- npm or yarn
 
 ### Installation
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/your-repo/slow-roads-recreation.git
-    ```
-2.  Install dependencies:
-    ```bash
-    npm install
-    ```
-3.  Start the development server:
-    ```bash
-    npm run dev
-    ```
+1. **Clone the repository**:
+   ```bash
+   git clone https://github.com/mkshaonexe/Everlane-Drive-Game.git
+   ```
 
-## 🛠️ Current Status
+2. **Install dependencies**:
+   ```bash
+   npm install
+   ```
 
-- [x] Core Engine Loop
-- [x] Infinite Procedural Terrain
-- [x] Advanced Vehicle Physics ("Care Model")
-- [x] Dynamic Lighting & Fog
-- [/] Procedural Road Path Generation (In Progress)
-- [/] Vegetation System (In Progress)
+3. **Start the development server**:
+   ```bash
+   npm run dev
+   ```
+
+4. **Build for production**:
+   ```bash
+   npm run build
+   ```
+
+---
 
 ## 📄 License
 
 MIT License.
-Asset credits belong to their respective creators. Original concept by [slowroads.io](https://slowroads.io).
+Asset credits belong to their respective creators. Original concept inspired by [slowroads.io](https://slowroads.io).

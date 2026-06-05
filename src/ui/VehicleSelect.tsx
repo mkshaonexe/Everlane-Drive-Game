@@ -3,7 +3,7 @@ import { OrbitControls } from '@react-three/drei';
 import { useGameStore, VEHICLES } from '../stores/gameStore';
 import { VehicleModel } from '../vehicle/VehicleModel';
 import { Suspense, useState } from 'react';
-import { LoadingSpinner } from './LoadingSpinner';
+import { GarageModelLoader } from './GarageModelLoader';
 
 export function VehicleSelect({ onBack }: { onBack: () => void }) {
     const { selectedVehicle, setSelectedVehicle } = useGameStore();
@@ -97,25 +97,18 @@ export function VehicleSelect({ onBack }: { onBack: () => void }) {
 
                     {/* Canvas Container */}
                     <div className="flex-1 relative w-full h-full">
-                        {/* Loading Spinner uses Suspense Fallback.
-                             Creating an absolute overlay for loading state.
-                             Note: Suspense only triggers if a component suspends.
-                             VehicleModel suspends while loading GLTF.
-                          */}
-                        <Suspense fallback={
-                            <div className="absolute inset-0 z-20 bg-black/50 backdrop-blur-sm">
-                                <LoadingSpinner />
-                            </div>
-                        }>
+                        <Suspense fallback={null}>
                             <Canvas shadows dpr={[1, 2]} camera={{ position: [5, 2.5, 5], fov: 40 }}>
                                 <ambientLight intensity={0.8} />
                                 <directionalLight position={[10, 10, 5]} intensity={1.5} castShadow />
                                 <directionalLight position={[-10, 5, -5]} intensity={0.4} />
                                 <pointLight position={[0, 3, 0]} intensity={0.8} />
                                 
-                                <group position={[0, -0.5, 0]}>
-                                    <VehicleModel vehicleId={previewVehicleId} />
-                                </group>
+                                <Suspense fallback={null}>
+                                    <group position={[0, -0.5, 0]}>
+                                        <VehicleModel vehicleId={previewVehicleId} />
+                                    </group>
+                                </Suspense>
 
                                 <OrbitControls
                                     target={[0, 0, 0]}
@@ -126,6 +119,7 @@ export function VehicleSelect({ onBack }: { onBack: () => void }) {
                                     minPolarAngle={0.2}
                                     maxPolarAngle={Math.PI / 2 - 0.1}
                                 />
+                                <GarageModelLoader />
                             </Canvas>
                         </Suspense>
                     </div>

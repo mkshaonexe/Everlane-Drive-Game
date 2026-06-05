@@ -51,8 +51,8 @@ export class VehiclePhysics {
 
     // Suspension Parameters
     private suspensionRestLength: number = 0.6; // Ideal spring length
-    private suspensionStiffness: number = 40.0; // Spring constant
-    private suspensionDamping: number = 2.5;    // Damper
+    private suspensionStiffness: number = 35.0; // Spring constant
+    private suspensionDamping: number = 8.0;    // Damper - near-critical to prevent oscillation
 
     private raycaster: Raycaster = new Raycaster();
     private rayOrigin: Vector3 = new Vector3();
@@ -455,8 +455,8 @@ export class VehiclePhysics {
             // Calculate rotation needed to align predictedUp with targetUp
             const correctionQuat = new Quaternion().setFromUnitVectors(predictedUp, targetUp);
 
-            // Apply a fraction of this correction (slerp)
-            const dampingFactor = 5.0 * delta; // Adjust strength
+            // Apply a fraction of this correction (slerp) - reduced from 5.0 to avoid over-correction shaking
+            const dampingFactor = 3.0 * delta; // Adjust strength
             const slerpedCorrection = new Quaternion().slerp(correctionQuat, Math.min(dampingFactor, 1.0));
 
             // Apply to current rotation

@@ -1,9 +1,9 @@
 import { useGameStore, VEHICLES, MAPS } from '../stores/gameStore';
 import { useEffect, useState, Suspense } from 'react';
 import { Canvas } from '@react-three/fiber';
-import { Stage, OrbitControls, Html } from '@react-three/drei';
+import { Stage, OrbitControls } from '@react-three/drei';
 import { VehicleModel } from '../vehicle/VehicleModel';
-import { LoadingSpinner } from './LoadingSpinner';
+import { GarageModelLoader } from './GarageModelLoader';
 import { useMemo } from 'react';
 import { useGLTF } from '@react-three/drei';
 import { getAssetPath } from '../utils/paths';
@@ -160,16 +160,13 @@ export function SettingsMenu({ onClose }: { onClose: () => void }) {
                                         <span className="text-xs font-bold text-indigo-400 uppercase tracking-widest">{currentVehicleConfig.name}</span>
                                     </div>
                                     <Canvas shadows dpr={[1, 2]} camera={{ position: [4, 2, 4], fov: 45 }}>
-                                        <Suspense fallback={
-                                            <Html center>
-                                                <LoadingSpinner />
-                                            </Html>
-                                        }>
+                                        <Suspense fallback={null}>
                                             <Stage environment="city" intensity={0.5}>
                                                 <VehicleModel vehicleId={previewVehicle} />
                                             </Stage>
                                             <OrbitControls autoRotate autoRotateSpeed={0.5} enableZoom={false} enablePan={false} minPolarAngle={0} maxPolarAngle={Math.PI / 2} />
                                         </Suspense>
+                                        <GarageModelLoader />
                                     </Canvas>
                                 </div>
                             </div>
@@ -240,16 +237,13 @@ export function SettingsMenu({ onClose }: { onClose: () => void }) {
 
                                     {currentMapConfig.type === 'gltf' && currentMapConfig.path ? (
                                         <Canvas shadows dpr={[1, 2]} camera={{ position: [15, 10, 15], fov: 50 }}>
-                                            <Suspense fallback={
-                                                <Html center>
-                                                    <LoadingSpinner />
-                                                </Html>
-                                            }>
+                                            <Suspense fallback={null}>
                                                 <Stage environment="sunset" intensity={0.5}>
                                                     <MapPreviewModel path={currentMapConfig.path} scale={currentMapConfig.scale ?? 1} />
                                                 </Stage>
                                                 <OrbitControls autoRotate autoRotateSpeed={0.3} enableZoom={true} enablePan={false} minPolarAngle={0.2} maxPolarAngle={Math.PI / 2.5} />
                                             </Suspense>
+                                            <GarageModelLoader />
                                         </Canvas>
                                     ) : (
                                         /* Procedural map preview: Illustrated card */

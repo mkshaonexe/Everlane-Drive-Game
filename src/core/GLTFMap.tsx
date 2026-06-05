@@ -58,8 +58,13 @@ function GLTFMapModel({ path, scale = 1, rotation = [0, 0, 0], position = [0, 0,
         // Traverse and extract vertices
         clonedScene.traverse((child: any) => {
             if (child.isMesh) {
-                // Flag mesh as road for physics ground check
-                child.userData.isRoad = true;
+                const childName = child.name ? child.name.toLowerCase() : '';
+                const isRoadMesh = !(childName.includes('building') || childName.includes('wall') || childName.includes('house') || childName.includes('barrier') || childName.includes('prop') || childName.includes('chevron') || childName.includes('tree') || childName.includes('light') || childName.includes('sign') || childName.includes('pole') || childName.includes('sky') || childName.includes('water'));
+                
+                // Flag mesh as road for physics ground check only if not excluded
+                if (isRoadMesh) {
+                    child.userData.isRoad = true;
+                }
                 
                 const geometry = child.geometry;
                 if (!geometry) return;

@@ -55,7 +55,7 @@ export function Scene() {
                 )}
 
                 {/* Vehicle - spawn position from map config */}
-                <Vehicle position={spawnPos as [number, number, number]} terrainGroup={terrainGroupRef} />
+                <Vehicle key={selectedMap} position={spawnPos as [number, number, number]} terrainGroup={terrainGroupRef} />
 
                 {/* OrbitControls disabled in favor of CameraController, but can be useful for debug if needed */}
                 {/* <OrbitControls /> */}

@@ -51,7 +51,7 @@ export function GLTFMap({ terrainGroupRef }: GLTFMapProps) {
             {/* Huge collidable grass field catching the car if it falls off-road */}
             <mesh
                 rotation={[-Math.PI / 2, 0, 0]}
-                position={[0, 25, 0]}
+                position={[0, 10, 0]}
                 receiveShadow
             >
                 <planeGeometry args={[15000, 15000]} />

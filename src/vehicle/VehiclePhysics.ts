@@ -57,12 +57,45 @@ export class VehiclePhysics {
     private forward: Vector3 = new Vector3();
     private up: Vector3 = new Vector3(0, 1, 0);
     private dummyVec: Vector3 = new Vector3();
+    
+    public lastTerrainObjects: Object3D[] = [];
 
     constructor() {
         this.raycaster.far = 2.0; // Shorter ray for suspension
     }
 
     update(delta: number, input: InputState, terrainObjects: Object3D[]) {
+        this.lastTerrainObjects = terrainObjects;
+        
+        // --- Water Detection ---
+        let waterY = -999;
+        let isWater = false;
+
+        const waterRayOrigin = this.position.clone().add(new Vector3(0, 10, 0));
+        const waterRayDir = new Vector3(0, -1, 0);
+        const waterRaycaster = new Raycaster(waterRayOrigin, waterRayDir, 0, 110);
+        const waterIntersects = waterRaycaster.intersectObjects(terrainObjects, true);
+
+        for (const hit of waterIntersects) {
+            let isWaterMesh = false;
+            const mat = (hit.object as any).material;
+            if (mat) {
+                if (Array.isArray(mat)) {
+                    isWaterMesh = mat.some(m => m.name === 'material_047_0');
+                } else {
+                    isWaterMesh = mat.name === 'material_047_0';
+                }
+            }
+            if (!isWaterMesh && hit.object.name && hit.object.name.includes('material_100_0')) {
+                isWaterMesh = true;
+            }
+            if (isWaterMesh) {
+                waterY = hit.point.y;
+                isWater = true;
+                break;
+            }
+        }
+
         // --- 1. Suspension & Gravity ---
         let wheelsOnGround = 0;
         let roadHits = 0;
@@ -73,6 +106,7 @@ export class VehiclePhysics {
 
         // Reset grounded state for this frame check
         let isCurrentlyGrounded = false;
+        let maxPenetration = 0;
 
         for (let i = 0; i < 4; i++) {
             // Calculate wheel position in world space
@@ -87,63 +121,99 @@ export class VehiclePhysics {
                 const hit = intersects[0];
                 const distance = hit.distance;
 
-                // Suspension Compression
-                // Ray starts +0.5 up. So actual extension is distance - 0.5? 
-                // Let's treat valid suspension range as [0, suspensionRestLength + margin]
-                // If hit dist < 0.5 + RestLength, we have contact
-
-                const compression = (this.suspensionRestLength + 0.5) - distance;
-
-                if (compression > 0) {
-                    wheelsOnGround++;
-                    isCurrentlyGrounded = true;
-
-                    // Spring Force: F = k * x
-                    const springForce = this.suspensionStiffness * compression;
-
-                    // Damping: F = -d * v (vertical velocity)
-                    // We need local vertical velocity at this wheel
-                    // V_wheel = V_car + Omega x R
-                    // Only care about Y component for simple model
-                    const wheelVelY = this.velocity.y; // Approximation
-                    const damperForce = -this.suspensionDamping * wheelVelY;
-
-                    const suspensionForceY = Math.max(0, springForce + damperForce);
-
-                    // Add Upward Force
-                    // Distribute force: simply adding to Y velocity for now (impulse-like)
-                    // Or accumulate force to apply to acceleration
-                    totalForce.y += suspensionForceY;
-
-                    // Detect Road
-                    let isRoad = false;
-                    let curr: Object3D | null = hit.object;
-                    while (curr) {
-                        if (curr.userData?.isRoad) {
-                            isRoad = true;
-                            break;
-                        }
-                        curr = curr.parent;
+                // Check if this wheel hit is water
+                let isWaterHit = false;
+                const mat = (hit.object as any).material;
+                if (mat) {
+                    if (Array.isArray(mat)) {
+                        isWaterHit = mat.some(m => m.name === 'material_047_0');
+                    } else {
+                        isWaterHit = mat.name === 'material_047_0';
                     }
-                    if (isRoad) roadHits++;
+                }
+                if (!isWaterHit && hit.object.name && hit.object.name.includes('material_100_0')) {
+                    isWaterHit = true;
+                }
+
+                // Only apply solid ground collision / suspension if it's not water
+                if (!isWaterHit) {
+                    // Solid ground collision (depenetration)
+                    if (distance < 0.5) {
+                        const penetration = 0.5 - distance;
+                        if (penetration > maxPenetration) {
+                            maxPenetration = penetration;
+                        }
+                    }
+
+                    // Suspension Compression
+                    const compression = (this.suspensionRestLength + 0.5) - distance;
+
+                    if (compression > 0) {
+                        wheelsOnGround++;
+                        isCurrentlyGrounded = true;
+
+                        // Spring Force: F = k * x
+                        const springForce = this.suspensionStiffness * compression;
+
+                        // Damping: F = -d * v (vertical velocity)
+                        const wheelVelY = this.velocity.y; // Approximation
+                        const damperForce = -this.suspensionDamping * wheelVelY;
+
+                        const suspensionForceY = Math.max(0, springForce + damperForce);
+                        totalForce.y += suspensionForceY;
+
+                        // Detect Road
+                        let isRoad = false;
+                        let curr: Object3D | null = hit.object;
+                        while (curr) {
+                            if (curr.userData?.isRoad) {
+                                isRoad = true;
+                                break;
+                            }
+                            curr = curr.parent;
+                        }
+                        if (isRoad) roadHits++;
+                    }
                 }
             }
         }
 
         // Apply Suspension Forces
-        // Average the force or apply it? 
-        // With 4 wheels, we divide mass? Let's treat mass = 1 for simplicity of tweaking
         this.velocity.add(totalForce.multiplyScalar(delta));
 
         this.onGround = isCurrentlyGrounded;
         this.isOnRoad = roadHits > 0;
+
+        // --- Water & Ground Depenetration Logic ---
+        const inWater = isWater && (this.position.y <= waterY + 0.3);
+        if (inWater) {
+            const time = performance.now() * 0.003;
+            const waveBob = Math.sin(time) * 0.08;
+            this.position.y = waterY + 0.2 + waveBob;
+            
+            // Stop falling
+            this.velocity.y = Math.max(0, this.velocity.y);
+            
+            // Make the car behave as if grounded on water
+            this.onGround = true;
+            this.isOnRoad = false;
+        } else if (maxPenetration > 0) {
+            // Apply solid ground depenetration if not in water
+            this.position.y += maxPenetration;
+            this.velocity.y = Math.max(0, this.velocity.y);
+            this.onGround = true;
+        }
 
         // --- 2. Surface Physics & Input ---
 
         let speedMultiplier = 1.0;
         let turnMultiplier = 1.0;
 
-        if (this.onGround && !this.isOnRoad) {
+        if (inWater) {
+            // WATER PENALTIES (driving in water is slow and heavy)
+            speedMultiplier = 0.35; // Max 35% speed
+            turnMultiplier = 0.60;  // High water resistance to turning
+        } else if (this.onGround && !this.isOnRoad) {
             // OFF-ROAD PENALTIES
             speedMultiplier = 0.60; // Max 60% speed
             turnMultiplier = 0.75;  // Understeer

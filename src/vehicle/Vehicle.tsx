@@ -7,7 +7,7 @@ import { VehicleController } from './VehicleController';
 import { CameraController } from './CameraController';
 import { AmbientAudio } from '../audio/AmbientAudio';
 import { EngineAudio } from '../audio/EngineAudio';
-import { useGameStore } from '../stores/gameStore';
+import { useGameStore, MAPS } from '../stores/gameStore';
 
 interface VehicleProps {
     position?: [number, number, number];
@@ -33,6 +33,10 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         return () => controller.dispose();
     }, [controller]);
 
+    useEffect(() => {
+        (window as any).vehiclePhysics = physics;
+    }, [physics]);
+
     const engineAudio = useMemo(() => new EngineAudio(), []);
 
     useEffect(() => {
@@ -46,6 +50,14 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
 
     useFrame((_state, delta) => {
         if (!groupRef.current) return;
+
+        // Freeze physics updates when game is paused
+        const isPaused = useGameStore.getState().isPaused;
+        if (isPaused) {
+            groupRef.current.position.copy(physics.position);
+            groupRef.current.quaternion.copy(physics.rotation);
+            return;
+        }
 
         // 1. Get Colliders
         const colliders: Object3D[] = [];
@@ -77,54 +89,66 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         }
 
         // Handle Respawn (R key)
-        if (controller.input.reset && roadPath.length > 0) {
-            // Find nearest point on road
-            // Since road points are ordered, we can just find closest one by distance
-            // Optimization: Start search from last known closest index if we tracked it, 
-            // but simplified search is fast enough for <1000 points on event trigger (not every frame)
+        if (controller.input.reset) {
+            if (roadPath.length > 0) {
+                // Find nearest point on road
+                // Since road points are ordered, we can just find closest one by distance
+                // Optimization: Start search from last known closest index if we tracked it, 
+                // but simplified search is fast enough for <1000 points on event trigger (not every frame)
 
-            let closestPoint = roadPath[0];
-            let minDistanceSq = physics.position.distanceToSquared(roadPath[0]);
-            let closestIndex = 0;
+                let closestPoint = roadPath[0];
+                let minDistanceSq = physics.position.distanceToSquared(roadPath[0]);
+                let closestIndex = 0;
 
-            for (let i = 1; i < roadPath.length; i++) {
-                const dSq = physics.position.distanceToSquared(roadPath[i]);
-                if (dSq < minDistanceSq) {
-                    minDistanceSq = dSq;
-                    closestPoint = roadPath[i];
-                    closestIndex = i;
+                for (let i = 1; i < roadPath.length; i++) {
+                    const dSq = physics.position.distanceToSquared(roadPath[i]);
+                    if (dSq < minDistanceSq) {
+                        minDistanceSq = dSq;
+                        closestPoint = roadPath[i];
+                        closestIndex = i;
+                    }
                 }
+
+                // Calculate road direction for rotation
+                // Use next point or prev point to get tangent
+                const nextPoint = roadPath[closestIndex + 1] || closestPoint;
+                const prevPoint = roadPath[closestIndex - 1] || closestPoint;
+
+                const tangent = new Vector3().subVectors(nextPoint, prevPoint).normalize();
+
+                // Set position slightly above road
+                physics.position.copy(closestPoint);
+                physics.position.y += 2.0;
+
+                // Reset Velocity
+                physics.velocity.set(0, 0, 0);
+                physics.angularVelocity.set(0, 0, 0);
+
+                // Set Rotation to face road direction
+                // Create rotation looking down the road (tangent)
+                // Up vector is Y (0, 1, 0)
+                const targetRotation = new Quaternion();
+                const lookPos = closestPoint.clone().add(tangent);
+
+                // Use dummy object to compute lookAt quaternion easily or manual calculation
+                // Manual: Matrix4.lookAt equivalent
+                const m = new Matrix4();
+                m.lookAt(closestPoint, lookPos, new Vector3(0, 1, 0));
+                targetRotation.setFromRotationMatrix(m);
+
+                physics.rotation.copy(targetRotation);
+            } else {
+                // Fallback for GLTF map or when no road path is generated
+                const selectedMap = useGameStore.getState().selectedMap;
+                const mapConfig = MAPS.find(m => m.id === selectedMap);
+                const spawnPos = mapConfig?.spawnPosition || [0, 50, 0];
+
+                physics.position.set(...spawnPos);
+                physics.position.y += 1.0; // spawn slightly above ground
+                physics.velocity.set(0, 0, 0);
+                physics.angularVelocity.set(0, 0, 0);
+                physics.rotation.identity();
             }
-
-            // Calculate road direction for rotation
-            // Use next point or prev point to get tangent
-            const nextPoint = roadPath[closestIndex + 1] || closestPoint;
-            const prevPoint = roadPath[closestIndex - 1] || closestPoint;
-
-            const tangent = new Vector3().subVectors(nextPoint, prevPoint).normalize();
-
-            // Set position slightly above road
-            physics.position.copy(closestPoint);
-            physics.position.y += 2.0;
-
-            // Reset Velocity
-            physics.velocity.set(0, 0, 0);
-            physics.angularVelocity.set(0, 0, 0);
-
-            // Set Rotation to face road direction
-            // Create rotation looking down the road (tangent)
-            // Up vector is Y (0, 1, 0)
-            const targetRotation = new Quaternion();
-            const lookPos = closestPoint.clone().add(tangent);
-
-            // Use dummy object to compute lookAt quaternion easily or manual calculation
-            // Manual: Matrix4.lookAt equivalent
-            const m = new Matrix4();
-            m.lookAt(closestPoint, lookPos, new Vector3(0, 1, 0));
-            targetRotation.setFromRotationMatrix(m);
-
-            physics.rotation.copy(targetRotation);
-
             // Reset input to prevent constant respawning if key held
             controller.input.reset = false;
         }

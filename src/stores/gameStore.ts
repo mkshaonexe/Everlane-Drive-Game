@@ -101,7 +101,7 @@ export const MAPS: MapConfig[] = [
         fogColor: '#c8b99a',
         fogNear: 50,
         fogFar: 500,
-        spawnPosition: [0, 50, 0], // Adjusted spawn height to match scaled town
+        spawnPosition: [-79.2, 38, 34.2], // Adjusted spawn height to match scaled town
     },
 ];
 

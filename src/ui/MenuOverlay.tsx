@@ -1,13 +1,11 @@
 import { useState } from 'react';
 import { useGameStore } from '../stores/gameStore';
 import { VehicleSelect } from './VehicleSelect';
+import { SettingsMenu } from './SettingsMenu';
 
 export function MenuOverlay() {
     const { isPaused, setIsPaused } = useGameStore();
-    const [view, setView] = useState<'main' | 'garage'>('main');
-
-    // Create a local state to track if game has started initially?
-    // For now, let's assume game starts paused or we use isPaused as "Menu Open"
+    const [view, setView] = useState<'main' | 'garage' | 'settings'>('main');
 
     if (!isPaused) return null;
 
@@ -19,14 +17,20 @@ export function MenuOverlay() {
         );
     }
 
+    if (view === 'settings') {
+        return (
+            <SettingsMenu onClose={() => setView('main')} />
+        );
+    }
+
     return (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center animate-in fade-in duration-300">
             <div className="text-center text-white max-w-md p-8 border border-white/20 bg-black/40 rounded-xl shadow-2xl">
                 <h1 className="text-5xl font-black mb-2 tracking-tighter italic">
-                    SLOW ROADS
+                    EVERLANE DRIVE
                 </h1>
                 <p className="text-lg opacity-80 mb-8 font-light">
-                    Endless driving zen.
+                    Choose your map. Choose your car. Drive.
                 </p>
 
                 <div className="flex flex-col gap-4">
@@ -41,7 +45,14 @@ export function MenuOverlay() {
                         onClick={() => setView('garage')}
                         className="px-8 py-3 bg-transparent border-2 border-white/30 text-white font-bold text-lg rounded-full hover:bg-white/10 hover:border-white transition-colors uppercase tracking-wider"
                     >
-                        Garage
+                        🚗 Garage
+                    </button>
+
+                    <button
+                        onClick={() => setView('settings')}
+                        className="px-8 py-3 bg-transparent border-2 border-indigo-500/50 text-indigo-300 font-bold text-lg rounded-full hover:bg-indigo-500/10 hover:border-indigo-400 transition-colors uppercase tracking-wider"
+                    >
+                        ⚙️ Settings & Maps
                     </button>
                 </div>
 
@@ -57,6 +68,10 @@ export function MenuOverlay() {
                     <div>
                         <span className="font-bold block">Reset</span>
                         R Key
+                    </div>
+                    <div>
+                        <span className="font-bold block">Menu</span>
+                        ESC
                     </div>
                 </div>
             </div>

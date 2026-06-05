@@ -12,6 +12,22 @@ export interface VehicleConfig {
     positionOffset?: [number, number, number];
 }
 
+export interface MapConfig {
+    id: string;
+    name: string;
+    description: string;
+    type: 'procedural' | 'gltf';
+    path?: string;
+    scale?: number;
+    rotationOffset?: [number, number, number];
+    positionOffset?: [number, number, number];
+    thumbnail?: string; // Optional thumbnail image URL
+    spawnPosition?: [number, number, number];
+    fogColor?: string;
+    fogNear?: number;
+    fogFar?: number;
+}
+
 export const VEHICLES: VehicleConfig[] = [
     {
         id: 'standard',
@@ -19,6 +35,16 @@ export const VEHICLES: VehicleConfig[] = [
         description: 'Balanced performance, reliable handling.',
         type: 'procedural',
         positionOffset: [0, -0.2, 0] // Fix floating
+    },
+    {
+        id: 'factory_sports',
+        name: 'Factory Sports',
+        description: 'Burnout Dominator Factory Sports. Raw power meets precision.',
+        type: 'gltf',
+        path: '/models/cars/factory_sports_burnout_dominator/scene.gltf',
+        scale: 1.5,
+        rotationOffset: [0, 0, 0],
+        positionOffset: [0, -0.3, 0]
     },
     {
         id: 'tokyo_drift',
@@ -50,6 +76,33 @@ export const VEHICLES: VehicleConfig[] = [
         rotationOffset: [0, 0, 0], // Face forward (net 180 deg with component rotation)
         positionOffset: [0, -0.6, 0] // Same as Lightning
     }
+];
+
+export const MAPS: MapConfig[] = [
+    {
+        id: 'procedural',
+        name: 'Everlane Highway',
+        description: 'Infinite procedurally generated highway. Drive forever through dynamic terrain.',
+        type: 'procedural',
+        fogColor: '#e5dbc1',
+        fogNear: 20,
+        fogFar: 300,
+        spawnPosition: [0, 5, 50],
+    },
+    {
+        id: 'tuscan_view',
+        name: 'Tuscan Vista',
+        description: 'Burnout Dominator Tuscan View. Sun-baked Italian roads with sweeping landscapes.',
+        type: 'gltf',
+        path: '/models/maps/burnout_dominator_tuscan_view/scene.gltf',
+        scale: 1,
+        rotationOffset: [0, 0, 0],
+        positionOffset: [0, 0, 0],
+        fogColor: '#c8b99a',
+        fogNear: 50,
+        fogFar: 500,
+        spawnPosition: [0, 5, 0],
+    },
 ];
 
 interface GameState {
@@ -96,6 +149,10 @@ interface GameState {
     // Vehicle Selection
     selectedVehicle: string;
     setSelectedVehicle: (id: string) => void;
+
+    // Map Selection
+    selectedMap: string;
+    setSelectedMap: (id: string) => void;
 }
 
 export const useGameStore = create<GameState>((set) => ({
@@ -155,6 +212,10 @@ export const useGameStore = create<GameState>((set) => ({
     setMute: (muted: boolean) => set({ isMuted: muted }),
 
     // Vehicle Selection
-    selectedVehicle: 'mcqueen', // Default to Lightning
+    selectedVehicle: 'factory_sports', // Default to Factory Sports Burnout Dominator
     setSelectedVehicle: (id: string) => set({ selectedVehicle: id }),
+
+    // Map Selection
+    selectedMap: 'tuscan_view', // Default to Tuscan View map
+    setSelectedMap: (id: string) => set({ selectedMap: id }),
 }));

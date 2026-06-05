@@ -63,7 +63,8 @@ export function Vehicle({ position = [0, 5, 0], terrainGroup }: VehicleProps) {
         // 1. Get Colliders
         const colliders: Object3D[] = [];
         if (terrainGroup && terrainGroup.current) {
-            colliders.push(...terrainGroup.current.children);
+            terrainGroup.current.updateMatrixWorld(true);
+            colliders.push(terrainGroup.current);
         }
 
         // 2. Update Physics

@@ -19,36 +19,6 @@ export const VEHICLES: VehicleConfig[] = [
         description: 'Balanced performance, reliable handling.',
         type: 'procedural',
         positionOffset: [0, -0.2, 0] // Fix floating
-    },
-    {
-        id: 'tokyo_drift',
-        name: 'Drift King',
-        description: '1997 Tokyo Drift Legend. High slip angle.',
-        type: 'gltf',
-        path: '/models/cars/1997_tokyo_drift/scene.gltf',
-        scale: 120, // Model has 0.01 internal scale, so 1.2 -> 120
-        rotationOffset: [0, 0, 0], // Face forward (net 180 deg with component rotation)
-        positionOffset: [0, -0.1, 0] // Lower to reduce gap
-    },
-    {
-        id: 'mcqueen',
-        name: 'Lightning',
-        description: 'Speed. I am speed.',
-        type: 'gltf',
-        path: '/models/cars/lightning_mcqueen_cars_3/scene.gltf',
-        scale: 1.5,
-        rotationOffset: [0, 0, 0],
-        positionOffset: [0, -0.6, 0]
-    },
-    {
-        id: 'mcqueen_black',
-        name: 'Storm',
-        description: 'Next gen speed.',
-        type: 'gltf',
-        path: '/models/cars/mcqueenbalcjkm/scene.gltf',
-        scale: 1.5, // Reduced from 80 to 1.5 based on user feedback
-        rotationOffset: [0, 0, 0], // Face forward (net 180 deg with component rotation)
-        positionOffset: [0, -0.6, 0] // Same as Lightning
     }
 ];
 
@@ -155,6 +125,6 @@ export const useGameStore = create<GameState>((set) => ({
     setMute: (muted: boolean) => set({ isMuted: muted }),
 
     // Vehicle Selection
-    selectedVehicle: 'mcqueen', // Default to Lightning
+    selectedVehicle: 'standard', // Default to Standard EV
     setSelectedVehicle: (id: string) => set({ selectedVehicle: id }),
 }));

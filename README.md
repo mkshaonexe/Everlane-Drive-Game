@@ -44,9 +44,6 @@ The car allows for a "semi-arcade" driving feel using a custom raycast suspensio
 
 ### Available Vehicles
 - **Standard EV**: Balanced performance, modern look.
-- **Drift King**: Tuned for sliding, higher torque.
-- **Storm**: Heavy duty, stable tracking.
-- **Lightning**: High top speed, aggressive aero.
 
 ### Controls
 -   **W**: Throttle (Forward)
